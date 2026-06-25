@@ -1,4 +1,4 @@
-let
+(ソース as table) as table => let
     Divided =
         Table.TransformColumns(
             ソース,
