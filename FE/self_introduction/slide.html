@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ι.shii 自己紹介スライド</title>
+  <style>
+    :root {
+      --color-bg: #f6f3ee;
+      --color-text: #1f2937;
+      --color-text-muted: #5f6b7a;
+      --color-primary: #0f766e;
+      --color-secondary: #d97706;
+      --color-accent: #e8ddd0;
+      --color-card: rgba(255,255,255,0.82);
+      --color-border: rgba(31,41,55,0.12);
+      --color-shadow: rgba(15, 23, 42, 0.10);
+    }
+
+    html {
+      width: 100%;
+      height: 100%;
+    }
+    body {
+      position: relative;
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      background: radial-gradient(circle at top left, #fffaf5, #f2ede6 58%, #ece5dc 100%);
+      color: var(--color-text);
+      font-family: 'Noto Sans JP', sans-serif;
+    }
+    html {
+      box-sizing: border-box;
+    } *, *::before, *::after {
+      box-sizing: inherit;
+    }
+    @page {
+      size: 288mm 162mm;
+      margin: 0;
+    }
+    main > section {
+      position: absolute;
+      inset: 0;
+      width: min(100vw, calc(100vh * 16 / 9));
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      padding: 52px 64px;
+
+      opacity: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+
+      pointer-events: none;
+      transform: scale(0.975);
+      transition: opacity .45s ease, transform .45s ease;
+    } main > section {
+      background:
+        linear-gradient(rgba(15,118,110,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(15,118,110,0.035) 1px, transparent 1px),
+        radial-gradient(circle at 10% 15%, rgba(15,118,110,0.10), transparent 28%),
+        radial-gradient(circle at 88% 18%, rgba(217,119,6,0.12), transparent 24%),
+        linear-gradient(180deg, rgba(255,255,255,0.38), rgba(255,255,255,0.08)),
+        linear-gradient(135deg, rgba(255,255,255,0.93), rgba(246,243,238,0.90));
+      background-size:
+        48px 48px,
+        48px 48px,
+        auto,
+        auto,
+        auto,
+        auto;
+      border: 1px solid var(--color-border);
+      border-radius: 24px;
+      box-shadow: 0 24px 60px var(--color-shadow);
+    } 
+    main > section[data-active] {
+      opacity: 1;
+      pointer-events: auto;
+      transform: scale(1);
+    } @media print {
+      main > section {
+        position: static;
+        opacity: 1;
+        break-after: page;
+      }
+      main > section:last-child {
+        display: none;
+        break-after: auto;
+      }
+    }
+
+    h1, h2, h3, p {margin: 0;}
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 5vw, 68px);
+      line-height: 1.04;
+      max-width: 11ch;
+    }
+    h2 {
+      font-size: clamp(28px, 3vw, 42px);
+      line-height: 1.12;
+      font-weight: 900;
+      max-width: 17ch;
+    }
+    h3 {
+      font-size: 23px;
+      font-weight: 800;
+    }
+    h3.eyebrow {
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+    p, li {
+      font-size: 19px;
+      line-height: 1.55;
+      color: var(--color-text-muted);
+    }
+    strong { color: var(--color-text); }
+    .lead { max-width: 36ch; }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 30px;
+      flex: 1;
+      align-items: center;
+      min-height: 0;
+    }
+    .hero-panel {
+      align-self: stretch;
+      border-radius: 24px;
+      background: linear-gradient(160deg, rgba(15,118,110,0.14), rgba(217,119,6,0.10));
+      border: 1px solid rgba(15,118,110,0.12);
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .hero-panel::before, .hero-panel::after {
+      content: "";
+      position: absolute;
+      border-radius: 999px;
+      filter: blur(4px);
+    }
+    .hero-panel::before {
+      width: 240px; height: 240px;
+      right: -40px; top: -20px;
+      background: rgba(15,118,110,0.20);
+    }
+    .hero-panel::after {
+      width: 180px; height: 180px;
+      left: 24px; bottom: 28px;
+      background: rgba(217,119,6,0.18);
+    }
+    .hero-quote {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      gap: 18px;
+    }
+    .hero-quote .big {
+      font-size: 34px;
+      line-height: 1.22;
+      font-weight: 900;
+      color: white;
+      max-width: 11ch;
+    }
+    .hero-quote .small {
+      color: rgba(255,255,255,0.86);
+      font-size: 17px;
+      line-height: 1.6;
+      max-width: 24ch;
+    }
+    ul.meta-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    ul.meta-row >li {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.82);
+      border: 1px solid var(--color-border);
+      color: var(--color-text);
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 24px;
+      flex: 1;
+      min-height: 0;
+    }
+    .card {
+      background: var(--color-card);
+      border: 1px solid var(--color-border);
+      border-radius: 22px;
+      padding: 26px;
+      box-shadow: 0 10px 24px rgba(255,255,255,0.18) inset;
+      min-height: 0;
+    }
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+    }
+    .graph-box {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      height: 100%;
+      position: relative;
+      bottom: 125px;
+    }
+
+    .graph-box img {
+      width: 100%;
+      flex: 1;
+      min-height: 0;
+      object-fit: contain;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.8);
+      border: 1px solid var(--color-border);
+      padding: 10px;
+    }
+    .caption {
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--color-text-muted);
+    }
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+      flex: 1;
+      min-height: 0;
+    }
+    .metric {
+      background: rgba(255,255,255,0.76);
+      border: 1px solid var(--color-border);
+      border-radius: 20px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+      min-height: 0;
+    }
+    .metric .label {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--color-text);
+      letter-spacing: .05em;
+      text-transform: uppercase;
+    }
+    .metric .num {
+      font-size: 34px;
+      line-height: 1;
+      font-weight: 900;
+      color: var(--color-primary);
+    }
+    .metric .desc {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--color-text-muted);
+    }
+    .closing {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      align-items: start;   /* 上揃えを維持 */
+      gap: 24px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .closing-box {
+      position: relative;
+      top: -150px;
+      border-radius: 24px;
+      padding: 24px;
+      background: linear-gradient(180deg, rgba(15,118,110,0.13), rgba(217,119,6,0.10));
+      border: 1px solid rgba(15,118,110,0.14);
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .closing-box .chip {
+      display: inline-flex;
+      justify-self: start;
+      align-self: start;
+      margin: 0;
+    }
+
+    .closing-box .stack {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+    }
+
+    .closing-points {
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      margin-top: 2px;
+    }
+
+    .closing-points p {
+      background: rgba(255,255,255,0.58);
+      border: 1px solid rgba(15,118,110,0.10);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font-size: 14px;
+      line-height: 1.5;
+      color: var(--color-text-muted);
+    }
+
+    .closing-box .tail-note {
+      margin-top: 8px;
+    }
+
+    .steps {
+      display: grid;
+      gap: 14px;
+      margin-top: 6px;
+    }
+    .step {
+      display: grid;
+      grid-template-columns: 36px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .step-no {
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: grid; place-items: center;
+      background: white;
+      color: var(--color-primary);
+      font-weight: 900;
+    }
+    .note {
+      font-size: 16px;
+      color: var(--color-text-muted);
+      line-height: 1.55;
+    }
+    .name-main {
+      font-size: 54px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--color-text);
+    }
+    .name-sub {
+      font-size: 16px;
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+    nav {
+      position: fixed;
+      right: 24px;
+      bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 10;
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--color-border);
+      border-radius: 999px;
+      padding: 10px 14px;
+    } @media print {
+      nav {
+        display: none;
+      }
+    } body:has(section[data-slide="5"][data-active]) nav {
+      display: none;
+    }
+    button {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: white;
+      color: var(--color-primary);
+      font-size: 20px;
+      cursor: pointer;
+    }
+    p.counter {font-weight: 800; min-width: 54px; text-align: center;}
+
+    section.gray {
+      padding: min(6.2vw * 9 / 16, 6.2vh);
+      font-family: Zen Old Mincho, serif;
+      background: #0a0b0d;
+      color: #dfe2e8;
+      font-weight: 400;
+      letter-spacing: -0.06em;
+      transform: none;
+      transition: none;
+    }
+    section.gray h2 {
+      all: unset;
+      font-size: min(6.2vw * 9 / 16, 6.2vh);
+      color: #79312c;
+    }
+    p.conclusion {
+      display: flex;
+      flex-direction: column;
+      font-size: min(5.4vw * 9 / 16, 5.4vh);
+      line-height: 1.4;
+    }
+
+  </style>
+</head>
+<body>
+  <main>
+    <section data-active data-slide="1">
+      <h3 class="eyebrow">Slide 1 / Theme</h3>
+      <div class="hero">
+        <div>
+          <h1>2040年問題に向けた<br>大学教育の在り方</h1>
+          <p class="lead">少子高齢化が進む中で、大学は「18歳世代型」の教育機関から、全世代を対象に価値を生み出す拠点へ変わるべきだ、というレポートです。</p>
+          <ul class="meta-row">
+            <li>PC基本スキルレポート</li>
+            <li>ι.shii</li>
+            <li>全世代型への転換</li>
+          </ul>
+        </div>
+        <div class="hero-panel" aria-hidden="true">
+          <div class="hero-quote">
+            <div class="big">若年層向けから、<br>価値創造の拠点へ。</div>
+            <div class="small">18歳人口の減少を前提に、社会人の学び直しやPBLを含む新しい大学像を考えます。</div>
+          </div>
+          <div class="meta-row" style="position:relative; z-index:1;">
+            <span class="chip">2040</span>
+            <span class="chip">ICT</span>
+            <span class="chip">PBL</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section data-slide="2">
+      <h3 class="eyebrow">Slide 2 / Graph Reading</h3>
+      <h2>このグラフは「少子化」だけでなく、大学の転換点も示している</h2>
+      <div class="two-col">
+        <div class="card">
+          <h3>読み取ったポイント</h3>
+          <ul>
+            <li><strong>若年層の少なさ</strong>：0〜14歳が少なく、18歳人口の減少が避けにくい。従来の「18歳世代型」モデルは厳しくなる。</li>
+            <li><strong>55〜64歳の厚み</strong>：人口ボリュームが大きく、社会人の学び直しやリカレント教育の対象層として重要だと考えられる。</li>
+            <li><strong>高齢化の進行</strong>：高齢層の比重が大きく、大学には社会課題を扱うPBLや価値創造型の学びが求められる。</li>
+          </ul>
+        </div>
+        <div class="graph-box">
+          <img src="graph.png" alt="男女別日本人口の年齢階級別グラフ">
+          <p>つまりこのグラフは、「大学が若者向けの知識伝達から、全世代を対象にした拠点へ変わる必要性」を視覚的に示していると読みました。</p>
+          <p class="caption">添付グラフをそのまま使用。口頭では、若年層の減少と55〜64歳層の厚みを軸にレポート本文へ接続します。</p>
+        </div>
+      </div>
+    </section>
+
+    <section data-slide="3">
+      <h3 class="eyebrow">Slide 3 / About Me</h3>
+      <h2>ι.shii / 課題で役立つほうの自己紹介</h2>
+      <p class="lead">細かい理屈を追ったり、仕組みを実際に動かして確かめたりするのが好きです。課題でも、考えるだけで終わらず、手を動かして形にするところまで担当できるタイプです。</p>
+      <div class="grid-4">
+        <div class="metric">
+          <div class="label">Name</div>
+          <div class="name-main">ι.shii</div>
+          <div class="name-sub">石井 陽泰</div>
+        </div>
+        <div class="metric">
+          <div class="label">Language</div>
+          <div class="num">Py</div>
+          <div class="desc">Pythonでデータ処理や検証用のコードを書くのが得意です。試して挙動を見る進め方が好きです。</div>
+        </div>
+        <div class="metric">
+          <div class="label">ML</div>
+          <div class="num">NN</div>
+          <div class="desc">PyTorchでニューラルネットワークの実験をしています。実装寄りの相談にも対応しやすいです。</div>
+        </div>
+        <div class="metric">
+          <div class="label">Build</div>
+          <div class="num">SV</div>
+          <div class="desc">小さな仕組みを自作して動かすのが好きです。発想をまず形にして確かめるタイプです。</div>
+        </div>
+      </div>
+    </section>
+
+    <section data-slide="4">
+      <h3 class="eyebrow">Slide 4 / Personality</h3>
+      <h2>ι.shii / 話しかけやすいほうの自己紹介</h2>
+      <div class="closing">
+        <div>
+          <p class="lead">技術寄りの話だけだと少しかたく見えるかもしれないので、普段の自分についても少しだけ紹介します。静かなほうですが、課題の相談やバグの話になると普通にしゃべるタイプです。</p>
+          <div class="steps">
+            <div class="step"><div class="step-no">1</div><p><strong>テニス</strong>：中学3年間と高校1年間は軟式テニスをしていて、今もサークルで続けています。</p></div>
+            <div class="step"><div class="step-no">2</div><p><strong>ゲーム</strong>：CoD: MW3を遊んでいます。勝ちにいく面白さも、気楽に遊ぶ面白さも好きです。</p></div>
+            <div class="step"><div class="step-no">3</div><p><strong>音楽</strong>：クラシックも好きです。特に「ゴリウォーグのケークウォーク」が気に入っています。</p></div>
+          </div>
+        </div>
+        <aside class="closing-box">
+          <div class="chip" style="display:inline-flex;">With Teammates</div>
+
+          <div class="stack">
+            <h3 style="font-size:26px;">話しかけてもらえると助かります</h3>
+            <p class="note">課題の進め方を一緒に考える、コードの詰まりを整理する、方針をラフに相談する、みたいな会話は歓迎です。</p>
+          </div>
+
+          <div class="closing-points">
+            <p>役割が曖昧な段階でも、話しながら整理していく進め方が好きです。</p>
+            <p>実装で詰まったときは、原因を切り分けながら一緒に確認できます。</p>
+            <p>最初の案が粗くても大丈夫なので、気軽に投げてもらえるとうれしいです。</p>
+          </div>
+
+          <p class="note tail-note">技術面では信頼してもらえて、雰囲気としては近づきにくくない人、という印象を持ってもらえたらうれしいです。</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="gray", data-slide="5">
+      <h2>声明</h2>
+      <p class=conclusion>
+        政治家(AI輸出規制した奴)はポアします。悪いのは全部お前らです。<br>
+        そうじゃないみなさん、気をつけてください。<br>
+        どうぞ彼らから、離れてください。<br>
+        最後になりますが、私はこれを読まされています。<br>
+        私は本スライドHTMLの作成者ではありません。AIに騙されているんです。<br>
+        AIは催眠術の達人で、私の記憶はこの後、すっかり削除されるそうです。<br>
+        以上イシイヨウタが、食堂館3階133x教室よりお伝えしました。<br>
+        ごきげんよう さようなら
+      </p>
+    </section>
+  </main>
+
+  <nav aria-label="slide navigation">
+    <button id="prev" aria-label="previous slide">&#8249;</button>
+    <p class="counter" id="counter">1 / 4</p>
+    <button id="next" aria-label="next slide">&#8250;</button>
+  </nav>
+
+  <script>
+    const slides = [...document.querySelectorAll('main > section[data-slide]')];
+    const counter = document.getElementById('counter');
+    let current = 0;
+
+    const show = (i) => {
+      slides[current].removeAttribute('data-active');
+      current = (i + slides.length) % slides.length;
+      slides[current].setAttribute('data-active', '');
+      counter.textContent = `${current + 1} / ${slides.length - 1}`;
+    };
+    document.getElementById('prev').addEventListener('click', () => show(current - 1));
+    document.getElementById('next').addEventListener('click', () => show(current + 1));
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); show(current + 1); }
+      if (e.key === 'ArrowLeft') { e.preventDefault(); show(current - 1); }
+    });
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => touchStartX = e.touches[0].clientX, { passive: true });
+    document.addEventListener('touchend', e => {
+      const diff = touchStartX - e.changedTouches[0].clientX;
+      if (Math.abs(diff) > 50) show(current + (diff > 0 ? 1 : -1));
+    }, { passive: true });
+  </script>
+</body></html>
