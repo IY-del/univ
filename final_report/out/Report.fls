@@ -1,6 +1,6 @@
-PWD /Users/ishpctrin/univ/tw/final_report
+PWD /Users/ishpctrin/univ/psnl_repo/final_report
 INPUT /usr/local/texlive/2026/texmf-var/web2c/luahbtex/lualatex.fmt
-INPUT /Users/ishpctrin/univ/tw/final_report/Report.tex
+INPUT /Users/ishpctrin/univ/psnl_repo/final_report/Report.tex
 OUTPUT out/Report.log
 INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/tex-ini-files/lualatexquotejobname.lua
 INPUT /usr/local/texlive/2026/texmf-dist/tex/latex/base/ltluatex.lua
