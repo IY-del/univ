@@ -118,6 +118,13 @@ $$x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}$$
 同じ零点 $x^*$ に収束するように初期区間および初期値を設定したうえで, この評価指標 $n$ を用いて結果を集計する.
 
 \section{結果}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=12cm]{./data/estimate_error.png}
+  \caption{関数$f(x)=\cos(x)-x^2$の近似解(上)と誤差(下)の推移についての二分法およびニュートン法の比較}
+  \label{fig:result}
+\end{figure}
+
 \section{おわりに}
 \printbibliography[title=参考文献]
 \end{document}
