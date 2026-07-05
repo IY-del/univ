@@ -1,0 +1,139 @@
+% $ biblatex auxiliary file $
+% $ biblatex bbl format version 3.3 $
+% Do not modify the above lines!
+%
+% This is an auxiliary file used by the 'biblatex' package.
+% This file may safely be deleted. It will be recreated by
+% biber as required.
+%
+\begingroup
+\makeatletter
+\@ifundefined{ver@biblatex.sty}
+  {\@latex@error
+     {Missing 'biblatex' package}
+     {The bibliography requires the 'biblatex' package.}
+      \aftergroup\endinput}
+  {}
+\endgroup
+
+
+\refsection{0}
+  \datalist[entry]{none/global//global/global/global}
+    \entry{bernardReinAnalytischerBeweis1817}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=0add238847fa4078e52b1d8e8f0d76bc}{%
+           family={Bernard},
+           familyi={B\bibinitperiod},
+           given={Bolzano},
+           giveni={B\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {MDZ}%
+      }
+      \strng{namehash}{0add238847fa4078e52b1d8e8f0d76bc}
+      \strng{fullhash}{0add238847fa4078e52b1d8e8f0d76bc}
+      \strng{fullhashraw}{0add238847fa4078e52b1d8e8f0d76bc}
+      \strng{bibnamehash}{0add238847fa4078e52b1d8e8f0d76bc}
+      \strng{authorbibnamehash}{0add238847fa4078e52b1d8e8f0d76bc}
+      \strng{authornamehash}{0add238847fa4078e52b1d8e8f0d76bc}
+      \strng{authorfullhash}{0add238847fa4078e52b1d8e8f0d76bc}
+      \strng{authorfullhashraw}{0add238847fa4078e52b1d8e8f0d76bc}
+      \field{sortinit}{1}
+      \field{sortinithash}{4f6aaa89bab872aa0999fec09ff8e98a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{Rein Analytischer {{Beweis}} Des {{Lehrsatzes}}, Da\ss{} Zwischen Je Zwei {{Werthen}}, Die Ein Entgegengesetztes {{Resultat}} Gew\"{a}hren, Wenigstens Eine Reelle {{Wurzel}} Der {{Gleichung}} Liege}
+      \field{urlday}{1}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{year}{1817}
+      \field{dateera}{ce}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.digitale-sammlungen.de/de/view/bsb10137646?page=,1
+      \endverb
+      \verb{url}
+      \verb https://www.digitale-sammlungen.de/de/view/bsb10137646?page=,1
+      \endverb
+    \endentry
+    \entry{newtonAnalysiAequationesNumero1669}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=7a621e01239c1fe6557cf9c9d2f85bd3}{%
+           family={Newton},
+           familyi={N\bibinitperiod},
+           given={Isaac},
+           giveni={I\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {THE NEWTON PROJECT}%
+      }
+      \strng{namehash}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \strng{fullhash}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \strng{fullhashraw}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \strng{bibnamehash}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \strng{authorbibnamehash}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \strng{authornamehash}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \strng{authorfullhash}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \strng{authorfullhashraw}{7a621e01239c1fe6557cf9c9d2f85bd3}
+      \field{sortinit}{2}
+      \field{sortinithash}{8b555b3791beccb63322c22f3320aa9a}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{title}{De {{Analysi}} per Aequationes Numero Terminorum Infinitas}
+      \field{urlday}{1}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{year}{1669}
+      \field{dateera}{ce}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb https://www.newtonproject.ox.ac.uk/view/texts/normalized/NATP00204
+      \endverb
+      \verb{url}
+      \verb https://www.newtonproject.ox.ac.uk/view/texts/normalized/NATP00204
+      \endverb
+    \endentry
+    \entry{wallisTreatiseAlgebra1685}{online}{}{}
+      \name{author}{1}{}{%
+        {{hash=10226c8376e2286adab263d210838898}{%
+           family={Wallis},
+           familyi={W\bibinitperiod},
+           given={John},
+           giveni={J\bibinitperiod}}}%
+      }
+      \list{organization}{1}{%
+        {Internet Archive}%
+      }
+      \strng{namehash}{10226c8376e2286adab263d210838898}
+      \strng{fullhash}{10226c8376e2286adab263d210838898}
+      \strng{fullhashraw}{10226c8376e2286adab263d210838898}
+      \strng{bibnamehash}{10226c8376e2286adab263d210838898}
+      \strng{authorbibnamehash}{10226c8376e2286adab263d210838898}
+      \strng{authornamehash}{10226c8376e2286adab263d210838898}
+      \strng{authorfullhash}{10226c8376e2286adab263d210838898}
+      \strng{authorfullhashraw}{10226c8376e2286adab263d210838898}
+      \field{sortinit}{3}
+      \field{sortinithash}{ad6fe7482ffbd7b9f99c9e8b5dccd3d7}
+      \field{labelnamesource}{author}
+      \field{labeltitlesource}{title}
+      \field{abstract}{A treatise of algebra, ... 1685.. Digitized from IA40313708-26. Previous issue: bim\_early-english-books-1641-1700\_a-second-letter-con-cer\_wallis-john\_1691. Next issue: bim\_early-english-books-1641-1700\_four-letters-on-several-\_walsh-peter\_1686.}
+      \field{langid}{Middle English}
+      \field{title}{A treatise of algebra}
+      \field{urlday}{1}
+      \field{urlmonth}{7}
+      \field{urlyear}{2026}
+      \field{year}{1685}
+      \field{dateera}{ce}
+      \field{urldateera}{ce}
+      \verb{urlraw}
+      \verb http://archive.org/details/bim_early-english-books-1641-1700_a-treatise-of-algebra-_wallis-john_1685
+      \endverb
+      \verb{url}
+      \verb http://archive.org/details/bim_early-english-books-1641-1700_a-treatise-of-algebra-_wallis-john_1685
+      \endverb
+      \keyw{Books}
+    \endentry
+  \enddatalist
+\endrefsection
+\endinput
+
