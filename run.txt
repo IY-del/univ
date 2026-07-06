@@ -1,0 +1,2 @@
+clang main.c print_pattern.c get_coord.c iterator.c fontlib.c -o main
+./main
