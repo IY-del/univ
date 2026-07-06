@@ -1,4 +1,4 @@
-\documentclass[a4paper,fontsize=11pt,line_length=42zw,number_of_lines=35,baselineskip=22pt]{jlreq}
+\documentclass[a4paper,fontsize=11pt,line_length=40zw,number_of_lines=35,baselineskip=1.7zw]{jlreq}
 \usepackage[margin=20truemm]{geometry}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -12,6 +12,7 @@
 \usepackage{textcomp}
 \usepackage[breaklinks=true, pdfborder={0 0 0}]{hyperref}
 \usepackage{enumitem}
+\usepackage{luacode}
 \usepackage[style=ieee,backend=biber]{biblatex}
 \addbibresource{refs.bib}
 
@@ -21,6 +22,57 @@
   \large 非線型方程式の数値解法の収束速度比較}
 \author{26G1012\quad 石井陽泰}
 \date{\today}
+
+%=luaでcsv読み込み====================================================
+\begin{luacode*}
+function read_csv(filename)
+  local rows = {}
+  local f = io.open(filename, "r")
+  if not f then
+    tex.error("CSV file not found: " .. filename)
+    return rows
+  end
+  for line in f:lines() do
+    local row = {}
+    for field in string.gmatch(line, "([^,]+)") do
+      table.insert(row, field)
+    end
+    table.insert(rows, row)
+  end
+  f:close()
+  return rows
+end
+
+function CSVTable()
+  local rows = csvdata
+  if not rows or #rows == 0 then
+    tex.print("CSV data is empty or not loaded.")
+    return
+  end
+  local ncols = #rows[1]
+  local colspec = string.rep("c", ncols)
+  tex.print("\\begin{tabular}{" .. colspec .. "}")
+  tex.print("\\toprule")
+  for i, row in ipairs(rows) do
+    local line = table.concat(row, " & ")
+    tex.print(line .. " \\\\")
+    if i == 1 then
+      tex.print("\\midrule")
+    end
+  end
+  tex.print("\\bottomrule")
+  tex.print("\\end{tabular}")
+end
+
+csvdata = read_csv("./data/bi_result.csv")
+\end{luacode*}
+
+%========================================================================
+%=csvを表形式で出力するコマンド=========================================
+\newcommand{\CSVTable}{
+  \directlua{CSVTable()}
+}
+%=========================================================================
 
 \begin{document}
 \maketitle
@@ -143,6 +195,8 @@ macOS バージョン 26.5.1（ビルド 25F80）上で実行した．
 \section{結果}
 本節では，二分法およびニュートン法を方程式 $f(x)=\cos(x)-x^2$ に適用して得られた近似解と，
 許容誤差 $\varepsilon = 10^{-5}$ を満たすまでの反復過程を示す．
+
+\CSVTable
 
 まず二分法について，反復回数 $n=1$ から $n=16$ までの各段階で得られた近似解および誤差の値を集計した．
 近似解は初期区間に対応する値から始まり，16 回目の反復において $x_{16}\approx 8.241425\times 10^{-1}$ に到達した．
