@@ -43,8 +43,8 @@ function read_csv(filename)
   return rows
 end
 
-function CSVTable()
-  local rows = csvdata
+function ResultTable(path)
+  local rows = read_csv(path)
   if not rows or #rows == 0 then
     tex.print("CSV data is empty or not loaded.")
     return
@@ -63,16 +63,8 @@ function CSVTable()
   tex.print("\\bottomrule")
   tex.print("\\end{tabular}")
 end
-
-csvdata = read_csv("./data/bi_result.csv")
 \end{luacode*}
-
 %========================================================================
-%=csvを表形式で出力するコマンド=========================================
-\newcommand{\CSVTable}{
-  \directlua{CSVTable()}
-}
-%=========================================================================
 
 \begin{document}
 \maketitle
@@ -196,7 +188,23 @@ macOS バージョン 26.5.1（ビルド 25F80）上で実行した．
 本節では，二分法およびニュートン法を方程式 $f(x)=\cos(x)-x^2$ に適用して得られた近似解と，
 許容誤差 $\varepsilon = 10^{-5}$ を満たすまでの反復過程を示す．
 
-\CSVTable
+\section{結果}
+
+% 二分法の表（bi_result.csv）
+\begin{table}[htbp]
+  \centering
+  \caption{二分法による反復過程の結果}
+  \label{tab:bi_result}
+  \directlua{ResultTable("./data/bi_result.csv")}
+\end{table}
+
+% ニュートン法の表（new_result.csv）
+\begin{table}[htbp]
+  \centering
+  \caption{ニュートン法による反復過程の結果}
+  \label{tab:new_result}
+  \directlua{ResultTable("./data/new_result.csv")}
+\end{table}
 
 まず二分法について，反復回数 $n=1$ から $n=16$ までの各段階で得られた近似解および誤差の値を集計した．
 近似解は初期区間に対応する値から始まり，16 回目の反復において $x_{16}\approx 8.241425\times 10^{-1}$ に到達した．
