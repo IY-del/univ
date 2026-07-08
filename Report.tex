@@ -71,6 +71,24 @@ end
 
 \section{はじめに}
 
+非線形方程式の解析的求解の限界として, 科学・工学の多くの現象が非線形方程式によって記述される一方, 三角関数と多項式が混在するような式は一般に解析的な閉じた形の解を持たない.
+例えば本レポートで扱う $f(x)=\cos(x)-x^2$ のような超越方程式は, 代数的操作のみでは厳密解を導出できず, 数値的な近似解法に依存せざるを得ない.
+
+根の存在保証に対する理論的要請として, 数値解法を適用する以前に, 解がどの区間に存在するかを数学的に保証する枠組みが必要とされてきた.
+19世紀初頭にBolzanoが中間値の定理に基づき連続関数の零点の存在を解析的に証明した結果は, 区間両端で関数値の符号が異なれば内部に零点が存在することを保証し, 二分法のような区間縮小型アルゴリズムの理論的基盤を与えている\cite{bernardReinAnalytischerBeweis1817}.
+
+反復法による近似解法の発展として, 根の存在が保証された後にいかに効率的に近似解へ到達するかという計算上の課題に対し, 接線近似に基づく反復解法が古くから探求されてきた.
+Newtonの未刊草稿\emph{De Analysi per Aequationes Numero Terminorum Infinitas}(1669)に起源を持つ手法は, 後にWallisの\emph{A Treatise of Algebra, both Historical and Practical}(1685)によって公刊され, 現在のNewton--Raphson法の原型として知られる反復的手続きとして確立されている\cite{newtonAnalysiAequationesNumero1669,wallisTreatiseAlgebra1685}.
+
+収束速度の違いに関する実証的検討の必要性として, 二分法とニュートン法はいずれも非線形方程式の求解に広く用いられる基本的手法であるが, 両者は収束の速さにおいて本質的に異なる性質を持つことが理論的に知られている.
+二分法は区間幅が反復ごとにほぼ半減する線形収束を示すのに対し, ニュートン法は適切な初期値と滑らかな関数のもとで誤差がほぼ2乗のオーダーで減少する二次収束を示すため, 同一の許容誤差に達するまでの反復回数に顕著な差が生じ得る\cite{shaimbetova2025NumericalComparisonBisection}. この収束性の違いを具体的な方程式に対して定量的に比較した実測データは, 手法選択の妥当性を検証するうえで教育的にも実務的にも意義がある.
+
+本レポートの目的は, 以上の背景を踏まえ, 超越方程式 $f(x)=\cos(x)-x^2$ を共通の対象として二分法とニュートン法をそれぞれ実装し, 同一の許容誤差 $\varepsilon=10^{-5}$ を満たすまでに要する反復回数を収束の速さの評価指標として両手法を定量的に比較することである.
+
+手法の概要として, まず対象方程式のグラフを描画して解の存在区間と偶関数性を視覚的に確認し, 正の側の零点を数値解法の対象として選定する.
+その上で, 二分法については中間値の定理に基づく区間縮小の原理から漸化式とアルゴリズムを導出し, ニュートン法については接線近似に基づく更新式を導出したうえで, いずれもC言語によりmacOS環境上で実装・実行する.
+各反復における近似解と誤差の推移を記録し，許容誤差 $\varepsilon=10^{-5}$ を満たすまでに要した反復回数を比較指標として集計することで, 二分法とニュートン法の収束速度の違いを具体的な数値実験として明らかにする.
+
 \section{手法}
 
 \subsection{方程式の説明}
@@ -191,20 +209,20 @@ macOS バージョン 26.5.1（ビルド 25F80）上で実行した．
 \section{結果}
 
 % 二分法の表（bi_result.csv）
-\begin{table}[htbp]
-  \centering
-  \caption{二分法による反復過程の結果}
-  \label{tab:bi_result}
-  \directlua{ResultTable("./data/bi_result.csv")}
-\end{table}
+% \begin{table}[htbp]
+%   \centering
+%   \caption{二分法による反復過程の結果}
+%   \label{tab:bi_result}
+%   \directlua{ResultTable("./data/bi_result.csv")}
+% \end{table}
 
-% ニュートン法の表（new_result.csv）
-\begin{table}[htbp]
-  \centering
-  \caption{ニュートン法による反復過程の結果}
-  \label{tab:new_result}
-  \directlua{ResultTable("./data/new_result.csv")}
-\end{table}
+% % ニュートン法の表（new_result.csv）
+% \begin{table}[htbp]
+%   \centering
+%   \caption{ニュートン法による反復過程の結果}
+%   \label{tab:new_result}
+%   \directlua{ResultTable("./data/new_result.csv")}
+% \end{table}
 
 まず二分法について，反復回数 $n=1$ から $n=16$ までの各段階で得られた近似解および誤差の値を集計した．
 近似解は初期区間に対応する値から始まり，16 回目の反復において $x_{16}\approx 8.241425\times 10^{-1}$ に到達した．
