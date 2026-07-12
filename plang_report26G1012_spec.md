@@ -597,3 +597,83 @@ print_as_pattern(&view);
 
 指定されたフォントパターンに基づいて，  
 `view->string`（デフォルトでは`"X"`）を用いた大きな文字表示が行われる。
+
+# main
+
+## 概要
+
+フォントデータファイル`font_data01.txt`から 0/1 のビット列を読み込み，  
+`get_pattern`ライブラリで 8×8 のフォントパターン配列を生成し，  
+`print_pattern`ライブラリでこれらのパターンを大きな文字として表示するエントリポイント関数である。[1][2][3]
+
+## コンパイル方法
+
+ソースコードが`main.c`の場合，以下のようにコンパイルする。[1]
+
+```sh
+clang main.c get_pattern.c print_pattern.c get_coord.c iterator.c fontlib.c -o main
+```
+
+## 関数一覧
+
+関数名 | 説明
+-|-
+main | フォントデータを読み込み，パターンを画面に表示するプログラム本体
+
+## main
+
+フォントデータファイルから 8×8 のパターン配列を読み込み，  
+`print_pattern`を用いて複数文字分のパターンを大きく表示する。
+
+パラメータ名 | 型 | 意味
+-|-|-
+(無し) | - | コマンドライン引数を使用しない
+
+戻り値 | 型 | 意味
+-|-|-
+戻り値 | int | 正常終了時 0，フォントデータ読み込み失敗時 非0
+
+### 使用例
+
+```sh
+clang main.c get_pattern.c print_pattern.c get_coord.c iterator.c fontlib.c -o main
+./main
+```
+
+### 実行例
+
+```text
+  XX            
+  XX            
+  XXXXXXXXXXXX  
+  XXXXXXXXXXXX  
+  XX    XX    XX
+  XX    XX    XX
+        XX    XX
+        XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XXXXXXXXXXXX  
+  XXXXXXXXXXXX  
+  XX            
+  XX            
+                
+                
+  XX          XX
+  XX          XX
+  XXXXXXXXXXXXXX
+  XXXXXXXXXXXXXX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+    XXXX  XXXX  
+    XXXX  XXXX  
+```
+
+（以下，省略）  
+
+この出力は，`font_data01.txt`のビット列を 8×8 パターンとして解釈し，  
+`print_as_pattern`が仕様どおりに `X` とスペースを用いて表示していることを示す。
