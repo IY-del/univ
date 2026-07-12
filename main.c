@@ -1,5 +1,7 @@
 // #include <stdio.h>
 #include "print_pattern.h"
+#include "get_pattern.h"
+
 int main() {
     int pattern[][8][8] = {
         /* A: pattern[0] */
