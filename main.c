@@ -12,7 +12,7 @@ int main() {
         return 1;
     }
 
-    PatternView view = new_pattern_view(n, patterns);
+    PatternView view = new_pattern_view_doublescale(n, patterns);
     print_as_pattern(&view);
 
     free_padded_8x8(patterns);
