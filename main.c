@@ -6,7 +6,7 @@ int main() {
     int (*patterns)[8][8];
     size_t n;
 
-    int ret = load_txt_to_padded_8x8("font_data01.txt", &patterns, &n);
+    int ret = load_txt_to_padded_8x8("font_data02.txt", &patterns, &n);
     if (ret != 0) {
         fprintf(stderr, "failed to load font data: %d\n", ret);
         return 1;
