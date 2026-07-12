@@ -3,7 +3,7 @@
 #include <ctype.h>
 #include "get_pattern.h"
 
-int load_txt_to_padded_8x8(const char *filename, int (**out)[8][8], size_t *out_n) {
+int load_txt_to_padded_8x8(const char filename[], int (**out)[8][8], size_t *out_n) {
     FILE *fp = fopen(filename, "r");
     if (!fp) {
         return -1;
