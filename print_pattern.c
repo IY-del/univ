@@ -13,7 +13,7 @@ PatternView new_pattern_view(size_t count, void *pattern) {
         .string   = "X",
         .scale_w  = PATTERN_SCALE_NORMAL,
         .scale_h  = PATTERN_SCALE_NORMAL,
-        .rotation = ROTATE_0
+        .rotation = ROTATE_90
     };
 
     return view;

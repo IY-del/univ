@@ -12,7 +12,6 @@ int main() {
         return 1;
     }
 
-    /* 読み込んだ全パターンをまとめて表示 */
     PatternView view = new_pattern_view(n, patterns);
     print_as_pattern(&view);
 
