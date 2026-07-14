@@ -216,32 +216,38 @@ macOS バージョン 26.5.1（ビルド 25F80）上で実行した．
 本節では，二分法およびニュートン法を方程式 $f(x)=\cos(x)-x^2$ に適用して得られた近似解と，
 許容誤差 $\varepsilon = 10^{-5}$ を満たすまでの反復過程を示す．
 
+まず二分法について，反復回数 $n=1$ から $n=16$ までの各段階で得られた
+近似解および誤差の値を表\ref{tab:bi_result}に示す．
+表\ref{tab:bi_result}より，近似解は反復ごとに $x^*\approx 0.824142$ へ
+単調に近づいており，誤差指標として用いた半区間幅 $|b-a|/2$ は
+初期の $2.5\times 10^{-1}$ から反復ごとに約半分ずつ減少し，
+16 回目には約 $7.6\times 10^{-6}$ となり，許容誤差 $\varepsilon$ を
+十分に下回っていることが確認できる．
+
 % 二分法の表（bi_result.csv）
-% \begin{table}[htbp]
-%   \centering
-%   \caption{二分法による反復過程の結果}
-%   \label{tab:bi_result}
-%   \directlua{ResultTable("./data/bi_result.csv")}
-% \end{table}
+\begin{table}[htbp]
+  \centering
+  \caption{二分法による反復過程の結果}
+  \label{tab:bi_result}
+  \directlua{ResultTable("./data/bi_result.csv")}
+\end{table}
 
-% % ニュートン法の表（new_result.csv）
-% \begin{table}[htbp]
-%   \centering
-%   \caption{ニュートン法による反復過程の結果}
-%   \label{tab:new_result}
-%   \directlua{ResultTable("./data/new_result.csv")}
-% \end{table}
+次にニュートン法について，反復回数 $n=1$ から $n=5$ までの
+近似解および誤差の値を表\ref{tab:new_result}に示す．
+表\ref{tab:new_result}より，近似解は 5 回の反復で
+$x^*\approx 0.824132$ に到達しており，誤差指標として用いた
+更新量の大きさ $|f(x_n)/f'(x_n)|$ は 1 回目の約 $4.2\times 10^{-1}$ から
+5 回目の約 $1.1\times 10^{-10}$ まで急速に減少している．
+特に $n=3$ 以降で誤差の桁数が毎回大きく増える様子は，
+表\ref{tab:new_result}の値を通して二次収束の特徴を直接確認できる点である．
 
-まず二分法について，反復回数 $n=1$ から $n=16$ までの各段階で得られた近似解および誤差の値を集計した．
-近似解は初期区間に対応する値から始まり，16 回目の反復において $x_{16}\approx 8.241425\times 10^{-1}$ に到達した．
-誤差指標として用いた半区間幅 $|b-a|/2$ は初期の $2.5\times 10^{-1}$ から反復ごとに約半分ずつ減少し，
-16 回目には約 $7.6\times 10^{-6}$ となり，許容誤差 $\varepsilon$ を十分に下回った．
-
-次にニュートン法について，同様に反復ごとの近似解と誤差を集計した．
-近似解は 5 回の反復で $x_5\approx 8.241323\times 10^{-1}$ に到達し，この値を解の近似として採用した．
-誤差は，ここでは更新量の大きさ $|f(x_n)/f'(x_n)|$ を指標として用いた．
-この誤差指標は 1 回目の約 $4.2\times 10^{-1}$ から 5 回目の約 $1.1\times 10^{-10}$ まで反復ごとに大きく減少し，
-許容誤差 $\varepsilon$ を十分に下回ったことが確認された．
+% ニュートン法の表（new_result.csv）
+\begin{table}[htbp]
+  \centering
+  \caption{ニュートン法による反復過程の結果}
+  \label{tab:new_result}
+  \directlua{ResultTable("./data/new_result.csv")}
+\end{table}
 
 関数 $f(x)=\cos(x)-x^2$ に対する両手法の収束過程を比較するため，
 図\ref{fig:result} に反復ごとの近似解および誤差の推移を示す．
