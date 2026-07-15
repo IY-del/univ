@@ -214,10 +214,10 @@ Newtonの未刊草稿に起源を持つ手法は, 後にWallisの著作によっ
 \section{手法}
 
 \subsection{方程式の説明}
-本レポートで対象とする方程式は以下:
+本レポートで対象とする方程式を(\ref{eq:fn_f})式に示す.
 \begin{equation}
-  f(x)=\cos(x)-x^2
   \label{eq:fn_f}
+  f(x)=\cos(x)-x^2
 \end{equation}
 方程式(\ref{eq:fn_f})の解を求めるにあたり, まず関数$f(x)$のグラフを描くことで, 解の存在範囲を確認する.
 
@@ -256,7 +256,7 @@ Newtonの未刊草稿に起源を持つ手法は, 後にWallisの著作によっ
 すなわち, $a<x^*<b$ を満たす点で $f(x^*)=0$ が成り立つ. 二分法はこの「区間両端で符号が異なればその内部に零点が存在する」という原理に基づいて, 
 常に零点を含む側の半区間のみを残す操作を繰り返すことで, 解の存在区間を段階的に絞り込む手法である. 
 具体的には, $n$ 回目の反復で零点を含む区間 $[a_n,b_n]$ が得られているとき, 
-中点を $c_n=(a_n+b_n)/2$ と定義し, 関数値 $f(c_n)$ の符号を調べる. 
+中点を $c_n=\dfrac{a_n+b_n}{2}$ と定義し, 関数値 $f(c_n)$ の符号を調べる. 
 もし $f(a_n)f(c_n)<0$ であれば零点は $[a_n,c_n]$ 内に存在するので, 
 次の区間を $[a_{n+1},b_{n+1}]=[a_n,c_n]$ に更新する. 
 そうでなければ（$f(a_n)f(c_n)\ge 0$ であれば）零点は $[c_n,b_n]$ 内に存在するので, 
@@ -312,7 +312,9 @@ $x^*$ の近傍で $f$ が十分滑らかであり, $f'(x^*)\neq 0$ を満たす
 \begin{figure}[htbp]
   \centering
   \directlua{NewtonDiagram(3.6)}
-  \caption{ニュートン法の説明用模式図}
+  \caption{ニュートン法の説明用模式図．本図は，連続微分可能な関数 $f(x)$ の零点近傍におけるニュートン反復
+  \(x_{n+1} = x_n - \dfrac{f(x_n)}{f'(x_n)}\)
+  の幾何学的構造を強調するために作成したものであり，初期値 $x_0$ においてグラフ $y=f(x)$ に立てた接線が $x$ 軸と交わる点を次の反復値 $x_1$ として採用するという，ニュートン法の本質的アイデアを視覚的に示している．図中では，関数曲線（青），接線（橙），初期点 $\bigl(x_0,f(x_0)\bigr)$（赤），更新後の近似解 $x_1$（緑），および補助的な破線によって，1 回の反復ステップにおける「接線近似による零点探索」の過程が，数値アルゴリズムの記号的記述と整合する形で表現されている．このような接線に基づく逐次近似の枠組みは，Newton の未刊草稿 \emph{De Analysi per Aequationes Numero Terminorum Infinitas}（1669）に端を発し\cite{newtonAnalysiAequationesNumero1669}，後に Wallis の代数学書 \emph{A Treatise of Algebra, both Historical and Practical}（1685）において，印刷物として広く紹介されたニュートン法（Newton--Raphson 法）の原型である反復的解法の幾何学的解釈とも自然に対応している\cite{wallisTreatiseAlgebra1685}.}
 \end{figure}
 
 \subsection{プログラムの仕様}
