@@ -153,7 +153,7 @@ function NM.NewtonDiagram(param)
   -- 初期点
   tp(string.format("\\fill[red] (%.6f,%.6f) circle (2pt);", param.x0, param.y0))
   tp(string.format(
-    "\\node[above right] at (%.6f,%.6f) {$\\bigl(x_0,f(x_0)\\bigr)$};",
+    "\\node[above right] at (%.6f,%.6f) {$\\bigl(x_n,f(x_n)\\bigr)$};",
     param.x0, param.y0
   ))
 
@@ -169,7 +169,7 @@ function NM.NewtonDiagram(param)
     "\\fill[green!50!black] (%.6f,0) circle (2pt);", param.x1
   ))
   tp(string.format(
-    "\\node[below] at (%.6f,0) {$x_1$};", param.x1
+    "\\node[below] at (%.6f,0) {$x_{n+1}$};", param.x1
   ))
 
   -- 補助線と矢印
@@ -309,12 +309,25 @@ $x^*$ の近傍で $f$ が十分滑らかであり, $f'(x^*)\neq 0$ を満たす
 このようにニュートン法は, 接線近似という単純な幾何学的原理に基づきつつ, 
 適切な条件のもとでは誤差が2乗のオーダーで減少する2次収束を達成する反復解法である. 
 
+この更新式は「現在の点 $x_n$ におけるグラフの接線を $x$-軸と交わるまで延長し,
+その交点を次の近似解 $x_{n+1}$ とする」という幾何学的解釈を持ち, 
+Wallis の著作でもこのような接線に基づく逐次近似の考え方が現れている.\cite{wallisTreatiseAlgebra1685}
+この幾何学的構造を模式的に示したものが, 図\ref{fig:newton_diagram} である.
+図では, 初期値 $x_0$ における接線が $x$ 軸と交わる点を $x_1$ として更新する 1 回分の反復ステップを,
+関数曲線, 接線, 補助線などを用いて視覚的に表現している.
+
 \begin{figure}[htbp]
+  \label{fig:newton_diagram}
   \centering
   \directlua{NewtonDiagram(3.6)}
-  \caption{ニュートン法の説明用模式図．本図は，連続微分可能な関数 $f(x)$ の零点近傍におけるニュートン反復
-  \(x_{n+1} = x_n - \dfrac{f(x_n)}{f'(x_n)}\)
-  の幾何学的構造を強調するために作成したものであり，初期値 $x_0$ においてグラフ $y=f(x)$ に立てた接線が $x$ 軸と交わる点を次の反復値 $x_1$ として採用するという，ニュートン法の本質的アイデアを視覚的に示している．図中では，関数曲線（青），接線（橙），初期点 $\bigl(x_0,f(x_0)\bigr)$（赤），更新後の近似解 $x_1$（緑），および補助的な破線によって，1 回の反復ステップにおける「接線近似による零点探索」の過程が，数値アルゴリズムの記号的記述と整合する形で表現されている．このような接線に基づく逐次近似の枠組みは，Newton の未刊草稿 \emph{De Analysi per Aequationes Numero Terminorum Infinitas}（1669）に端を発し\cite{newtonAnalysiAequationesNumero1669}，後に Wallis の代数学書 \emph{A Treatise of Algebra, both Historical and Practical}（1685）において，印刷物として広く紹介されたニュートン法（Newton--Raphson 法）の原型である反復的解法の幾何学的解釈とも自然に対応している\cite{wallisTreatiseAlgebra1685}.}
+  \caption{%
+    ニュートン法の説明用模式図．連続微分可能な関数 $f(x)$ に対し，
+    現在の近似値 $x_n$ における接線が $x$ 軸と交わる点を次の近似値 $x_{n+1}$ とするという，
+    更新式 \(x_{n+1} = x_n - \dfrac{f(x_n)}{f'(x_n)}\) の幾何学的解釈を示している．
+    図中では，関数曲線（青），点 $\bigl(x_n,f(x_n)\bigr)$ における接線（橙），
+    初期点（赤），更新後の近似解（緑），および補助的な破線により，
+    1 回の反復における接線近似と零点探索の対応関係を視覚的に表現している．
+  }
 \end{figure}
 
 \subsection{プログラムの仕様}
