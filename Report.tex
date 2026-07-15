@@ -13,6 +13,7 @@
 \usepackage[breaklinks=true, pdfborder={0 0 0}]{hyperref}
 \usepackage{enumitem}
 \usepackage{luacode}
+\usepackage{tikz}
 \usepackage[style=ieee,backend=biber]{biblatex}
 \addbibresource{refs.bib}
 
@@ -63,6 +64,127 @@ function ResultTable(path)
   tex.print("\\bottomrule")
   tex.print("\\end{tabular}")
 end
+
+--=====================================
+-- Newton-method schematic (Lua module)
+--=====================================
+local NM = {}
+
+function NM.f(x)
+  return x^4 / 81 - 1
+end
+
+function NM.df(x)
+  return 4*x^3 / 81
+end
+
+function NM.newton_step(x)
+  return x - NM.f(x)/NM.df(x)
+end
+
+function NM.tangent_coeff(x0)
+  local m = NM.df(x0)
+  local b = NM.f(x0) - m*x0
+  return m, b
+end
+
+-- 図に必要なパラメータを全部まとめて返す
+function NM.get_param(x0)
+  local y0 = NM.f(x0)
+  local x1 = NM.newton_step(x0)
+  local y1 = NM.f(x1)
+  local m, b = NM.tangent_coeff(x0)
+
+  -- x は今のロジックのまま
+  local margin_x = math.abs(x1 - x0) + 0.5
+  local xmin = math.min(x0, x1) - margin_x
+  local xmax = math.max(x0, x1) + margin_x
+
+  local yf_min = NM.f(xmin)
+  local yf_max = NM.f(xmax)
+
+  local yt_min = m * xmin + b
+  local yt_max = m * xmax + b
+
+  local ymin = math.min(yf_min, yf_max, yt_min, yt_max)
+  local ymax = math.max(yf_min, yf_max, yt_min, yt_max)
+
+  -- 少し余白
+  local margin_y = 0.1 * math.abs(ymax - ymin)
+  if margin_y < 1.0 then margin_y = 1.0 end
+  ymin = ymin - margin_y
+  ymax = ymax + margin_y
+
+  return {
+    x0 = x0, y0 = y0,
+    x1 = x1, y1 = y1, m = m, b = b,
+    xmin = xmin, xmax = xmax,
+    ymin = ymin, ymax = ymax,
+  }
+end
+
+local function tp(s)
+  tex.print(s)
+end
+
+-- パラメータオブジェクトを受け取ってTikZを描く
+function NM.NewtonDiagram(param)
+  tp("\\begin{tikzpicture}[scale=1.2]")
+
+  -- 軸
+  tp(string.format(
+    "\\draw[->] (%.3f,0) -- (%.3f,0) node[below] {$x$};",
+    (param.xmin > 0) and -0.5 or param.xmin, param.xmax
+  ))
+  tp(string.format(
+    "\\draw[->] (0,%.3f) -- (0,%.3f) node[left] {$y$};",
+    param.ymin, param.ymax
+  ))
+  -- 原点
+  tp("\\fill[black] (0,0) circle (1.5pt);")
+  tp("\\node[below left] at (0,0) {$O$};")
+
+  -- 関数グラフ（ここはさっきの座標列方式にしても良い）
+  tp(string.format(
+  "\\draw[thick,blue,domain=%.3f:%.3f,samples=200] plot (\\x,{(\\x*\\x*\\x*\\x) / 81 - 1});",
+  (param.xmin > 0) and 0 or param.xmin, param.xmax
+  ))
+
+  -- 初期点
+  tp(string.format("\\fill[red] (%.6f,%.6f) circle (2pt);", param.x0, param.y0))
+  tp(string.format(
+    "\\node[above right] at (%.6f,%.6f) {$\\bigl(x_0,f(x_0)\\bigr)$};",
+    param.x0, param.y0
+  ))
+
+  -- 接線
+  tp(string.format(
+    "\\draw[thick,orange] (%.6f,%.6f) -- (%.6f,%.6f);",
+    param.xmin, param.m*param.xmin + param.b,
+    param.xmax, param.m*param.xmax + param.b
+  ))
+
+  -- x1
+  tp(string.format(
+    "\\fill[green!50!black] (%.6f,0) circle (2pt);", param.x1
+  ))
+  tp(string.format(
+    "\\node[below] at (%.6f,0) {$x_1$};", param.x1
+  ))
+
+  -- 補助線と矢印
+  tp(string.format("\\draw[dashed, dash pattern=on 2pt off 2pt] (%.6f,0) -- (%.6f,%.6f);", param.x0, param.x0, param.y0))
+  tp(string.format("\\draw[dashed, dash pattern=on 2pt off 2pt] (%.6f,0) -- (%.6f,%.6f);", param.x1, param.x1, param.y1))
+  tp(string.format("\\draw[->,thick] (%.6f,%.6f) -- (%.6f,0);", param.x0, param.y0, param.x1))
+
+  tp("\\end{tikzpicture}")
+end
+
+-- LaTeX側から呼ぶラッパ
+function NewtonDiagram(x0)
+  NM.NewtonDiagram(NM.get_param(x0))
+end
+
 \end{luacode*}
 %========================================================================
 
@@ -186,6 +308,12 @@ $x^*$ の近傍で $f$ が十分滑らかであり, $f'(x^*)\neq 0$ を満たす
 を計算し, $|x_{n+1}-x_n|$ や $|f(x_{n+1})|$ が所定の収束判定条件を満たした時点で反復を終了し, $x_{n+1}$ を近似解とみなす. 
 このようにニュートン法は, 接線近似という単純な幾何学的原理に基づきつつ, 
 適切な条件のもとでは誤差が2乗のオーダーで減少する2次収束を達成する反復解法である. 
+
+\begin{figure}[htbp]
+  \centering
+  \directlua{NewtonDiagram(3.6)}
+  \caption{ニュートン法の説明用模式図}
+\end{figure}
 
 \subsection{プログラムの仕様}
 \subsubsection{二分法の仕様}
