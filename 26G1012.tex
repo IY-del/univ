@@ -1,0 +1,89 @@
+\documentclass[uplatex,dvipdfmx]{jsarticle}
+
+\usepackage[uplatex,deluxe]{otf} % UTF
+\usepackage[noalphabet]{pxchfon} % must be after otf package
+\usepackage{stix2} %欧文＆数式フォント
+\usepackage[fleqn,tbtags]{mathtools} % 数式関連 (w/ amsmath)
+\usepackage{hira-stix} % ヒラギノフォント＆STIX2 フォント代替定義（Warning回避）
+\usepackage[dvipdfmx, pdfborder={0 0 0}]{hyperref}
+\usepackage{xurl}
+\usepackage[style=ieee,backend=biber]{biblatex}
+\addbibresource{refs.bib}
+\usepackage{listings} % プログラム表示のためのパッケージ
+\lstset{
+basicstyle={\ttfamily},
+identifierstyle={\small},
+commentstyle={\smallitshape},
+keywordstyle={\small\bfseries},
+ndkeywordstyle={\small},
+stringstyle={\small\ttfamily}, frame={tb},
+breaklines=true, columns=[l]{fullflexible},
+numbers=left, xrightmargin=0zw, xleftmargin=3zw,
+numberstyle={\scriptsize}, stepnumber=1,
+numbersep=1zw, lineskip=-0.5ex
+}
+
+\begin{document}
+
+\title{システム名}
+\author{26G1012 石井陽泰}
+\date{\today}
+\maketitle
+\section{システムの目的と概要}
+% システムが何を実現するものなのか、どう役立つのか(何を模倣した動作か等)などを説明すること．
+\cite{gripon2026MicrocontrollerBasedCarParking}
+\url{https://www.tinkercad.com/things/7TQ30WMwQnm-26g1012/editel?returnTo=sharecode=MZAnpTt5TfT3vMYNU4AxtiqTfitiM_Kg8O0pw0faDh0}
+\section{システム構成}
+% 構成要素のリスト(表)と回路図を表示し、参照しながら接続関係や用途を説明すること．
+
+\section{システムの説明}
+% センサがどのように物理現象を感知するのか説明すること．
+
+% Arduinoがどのような処理を行うのか説明すること．
+
+% 処理結果を基にアクチュエータがどう動くのか説明すること．
+
+\section{プログラムの説明}
+
+\subsection{プログラム全体の説明}
+
+\subsection{関数の詳細}
+\subsubsection{setup関数}
+% setup関数の概要を説明すること．
+
+\begin{lstlisting}[firstnumber=1, caption=setup関数, label=setup]
+setup(){
+}
+\end{lstlisting}
+
+内部処理の詳細を説明すること．
+
+\subsubsection{loop関数}
+% loop関数の概要を説明を記載すること．
+
+\begin{lstlisting}[firstnumber=1, caption=loop関数, label=loop]
+loop(){
+}
+\end{lstlisting}
+
+% 内部処理の詳細を説明すること．
+
+\subsubsection{XXX関数}
+% 自作関数の概要を説明を記載すること．自作関数がなければ削除してください．
+
+\begin{lstlisting}[firstnumber=1, caption=XXX関数, label=XXX]
+XXX(){
+}
+\end{lstlisting}
+
+% 内部処理の詳細を説明すること．
+
+\section{動作例}
+% スクショを使ってシステムがどのように動作するか説明すること．
+
+\section{アピールポイント}
+% 習っていないセンサを使った，センサを複数使った，制御や出力をこだわったなどを説明すること．
+% 単に「２つ使いました」や「頑張りました．」のようなアピールではなく，なぜそうしたのか，その工夫によりどう良くなったのか説明すること．
+
+\printbibliography[title=参考文献]
+\end{document} 
