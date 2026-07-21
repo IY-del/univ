@@ -47,22 +47,22 @@ numbersep=1zw, lineskip=-0.5ex
 
 本システムの構成要素を表\ref{tab:components}に示す。
 
-% TODO: 実際の部品リスト表を追加
-% 例:
-% \begin{table}[h]
-% \centering
-% \caption{構成要素一覧}
-% \label{tab:components}
-% \begin{tabular}{ll}
-% 部品名 & 用途 \\
-% \hline
-% Arduino Uno R3 & 中央のマイコン制御 \\
-% HC-SR04 超音波センサ & 障害物までの距離計測 \\
-% NeoPixel Ring 24 & 距離と危険度の視覚表示 \\
-% 圧電ブザー & 距離に応じた警告音出力 \\
-% 16×2 I2C LCD & 距離値と状態の文字表示 \\
-% \end{tabular}
-% \end{table}
+\begin{table}[h]
+\centering
+\caption{構成要素一覧}
+\label{tab:components}
+\begin{tabular}{lll}
+\hline
+名前 & 数量 & コンポーネント \\
+\hline
+U1      & 1 & Arduino Uno R3 \\
+U3      & 1 & PCF8574 ベース, 39 (0x27) LCD 16 x 2 (I2C) \\
+DIST1   & 1 & 超音波距離センサー(4 ピン) \\
+PIEZO1  & 1 & 圧電 \\
+RING2   & 1 & NeoPixel Ring 24 \\
+\hline
+\end{tabular}
+\end{table}
 
 回路図では、HC-SR04 の TRIG/ECHO ピンを Arduino Uno のデジタルピン（本システムでは 8 番と 9 番）に接続し、NeoPixel Ring は一本のデータ線（2 番ピン）と電源・GNDで制御する。  
 圧電ブザーは 7 番ピンから ON/OFF 駆動し、LCD は I2C バス（SDA/SCL）経由で Arduino に接続している（具体的なアドレスは \verb|LCD_ADDR = 0x27| に設定）。  
