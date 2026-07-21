@@ -41,8 +41,6 @@ enum  StateLogic: uint16_t {
 // generatorを選ぶ
 const uint8_t state_logic_num = STATE_LOGIC_INC;
 
-typedef uint8_t (*Generator)(uint8_t);
-
 // ==============================
 // ライブラリオブジェクト
 // ==============================
@@ -79,15 +77,15 @@ uint8_t gen_mod(uint8_t current) {
   return next;
 }
 
-Generator generators[] = {
+typedef uint8_t (*Generator)(uint8_t);
+
+Generator gens[] = {
   gen_inc,
   gen_lfsr,
   gen_mod
 };
 
-Generator get_generator() {
-  return generators[state_logic_num];
-}
+const auto get_next = gens[state_logic_num];
 
 // ==============================
 // グローバル状態
@@ -257,9 +255,7 @@ void loop() {
   if (now - last_update_ms >= (unsigned long)duration_ms) {
     last_update_ms = now;
 
-    Generator gen = get_generator();
-    current_state = gen(current_state);
-
+    current_state = get_next(current_state);
     render_state(current_state, distance_cm);
   }
 
