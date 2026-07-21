@@ -1,4 +1,3 @@
-// #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 #include <LiquidCrystal_I2C.h>
 
