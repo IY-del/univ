@@ -164,7 +164,7 @@ void setup() {
 }
 \end{lstlisting}
 
-内部処理の詳細を説明すること．
+% 内部処理の詳細を説明すること．
 
 \begin{itemize}
   \item シリアルポートの初期化（\verb|Serial.begin(9600)|）により、デバッグ用の距離値出力を可能にしている。  
@@ -198,13 +198,12 @@ void loop() {
 }
 \end{lstlisting}
 
-内部処理の詳細を説明すること．
-
 \begin{itemize}
   \item 毎ループでまず \verb|measure_distance_cm()| を呼び、現在の障害物との距離をcm単位で取得する。  
   \item \verb|map_distance_to_duration(distance_cm)| により、その距離を「状態更新間隔（ms）」にマッピングし、近いほど短い周期、遠いほど長い周期となるように調整する。  
   \item \verb|millis()| から現在時刻を取得し、前回の更新時刻 \verb|last_update_ms| との差が \verb|duration_ms| 以上になっていたら、状態遷移と表示更新を行う。  
-  \item 状態遷移は \verb|gens[state_logic_num]| から選ばれるジェネレータ関数ポインタ（インクリメント／LFSR／モジュロ乗算など）を通じて実行され、if/switchを使わずに \verb|current_state = get_next(current_state)| の形で次状態を求めている。  
+  \item 状態遷移は \verb|gens[state_logic_num]| から選ばれるジェネレータ関数ポインタ（インクリメント／LFSR／モジュロ乗算など）を通じて実行され、if/switchを使わずに\\
+  \verb|current_state = get_next(current_state)| の形で次状態を求めている。  
   \item \verb|render_state(current_state, distance_cm)| では、現在の状態と距離をもとに NeoPixel リングの1点ランナー＋トレイルパターンを描画し、回転速度と色で危険度を視覚的に表現する。  
   \item LEDの更新タイミングに関係なく、ブザーとLCDは毎ループで \verb|update_buzzer(distance_cm)| と \verb|update_lcd(distance_cm)| によって更新され、距離情報を音と文字でも補完している。  
 \end{itemize}
@@ -229,7 +228,7 @@ int measure_distance_cm() {
 }
 \end{lstlisting}
 
-% 内部処理の詳細を説明すること．
+
 
 \begin{itemize}
   \item TRIGピンを一度LOWにした後、10µsだけHIGHにすることでHC-SR04に超音波パルスの発射を指示する。  
