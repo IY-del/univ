@@ -1,4 +1,4 @@
-#include <Arduino.h>
+// #include <Arduino.h>
 #include <Adafruit_NeoPixel.h>
 #include <LiquidCrystal_I2C.h>
 
@@ -31,17 +31,16 @@ const uint16_t DURATION_MAX_MS = 500;  // パターン更新間隔の最大（2H
 // 状態空間：ここでは「位置系」なので0〜23
 const uint8_t STATE_COUNT = NEOPIXEL_NUM;
 
-// ジェネレータの種類（ここは普通のenumでOK）
-enum StateLogic : uint8_t {
-  STATE_LOGIC_INC = 0,   // (pos + 1) % N
-  STATE_LOGIC_LFSR = 1,  // LFSR的な巡回
-  STATE_LOGIC_MOD = 2    // 乗算ステップ
+// ジェネレータの種類
+enum  StateLogic: uint16_t {
+  STATE_LOGIC_INC,
+  STATE_LOGIC_LFSR,
+  STATE_LOGIC_MOD
 };
 
-// 使うジェネレータをここで選ぶ
+// generatorを選ぶ
 const uint8_t state_logic_num = STATE_LOGIC_INC;
 
-// ★ Generator の typedef はここ
 typedef uint8_t (*Generator)(uint8_t);
 
 // ==============================
