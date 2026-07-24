@@ -1,26 +1,27 @@
-\documentclass[uplatex,dvipdfmx]{jsarticle}
+\documentclass[a4paper,fontsize=11pt,line_length=40zw,number_of_lines=35,baselineskip=1.7zw]{jlreq}
 
-\usepackage[uplatex,deluxe]{otf} % UTF
-\usepackage[noalphabet]{pxchfon} % must be after otf package
-\usepackage{stix2} %欧文＆数式フォント
-\usepackage[fleqn,tbtags]{mathtools} % 数式関連 (w/ amsmath)
-\usepackage{hira-stix} % ヒラギノフォント＆STIX2 フォント代替定義（Warning回避）
-\usepackage[pdfborder={0 0 0}]{hyperref}
+\usepackage[margin=20truemm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage[breaklinks=true, pdfborder={0 0 0}]{hyperref}
 \usepackage{xurl}
+\usepackage{luacode}
 \usepackage[style=ieee,backend=biber]{biblatex}
 \addbibresource{refs.bib}
+\usepackage[fleqn,tbtags]{mathtools}
+\usepackage{stix2}
 \usepackage{listings} % プログラム表示のためのパッケージ
 \lstset{
-basicstyle={\ttfamily},
-identifierstyle={\small},
-commentstyle={\smallitshape},
-keywordstyle={\small\bfseries},
-ndkeywordstyle={\small},
-stringstyle={\small\ttfamily}, frame={tb},
-breaklines=true, columns=[l]{fullflexible},
-numbers=left, xrightmargin=0zw, xleftmargin=3zw,
-numberstyle={\scriptsize}, stepnumber=1,
-numbersep=1zw, lineskip=-0.5ex
+  basicstyle={\ttfamily},
+  identifierstyle={\small},
+  commentstyle={\smallitshape},
+  keywordstyle={\small\bfseries},
+  ndkeywordstyle={\small},
+  stringstyle={\small\ttfamily}, frame={tb},
+  breaklines=true, columns=[l]{fullflexible},
+  numbers=left, xrightmargin=0pt, xleftmargin=3em,
+  numberstyle={\scriptsize}, stepnumber=1,
+  numbersep=1em, lineskip=-0.5ex
 }
 
 \begin{document}
