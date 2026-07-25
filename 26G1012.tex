@@ -34,12 +34,11 @@
 % システムが何を実現するものなのか、どう役立つのか(何を模倣した動作か等)などを説明すること．
 
 本システムは、暗所で車両や人と障害物との距離を直感的に把握できるようにする「距離インジケータ」である。
-超音波距離センサで壁との距離を計測し、その結果を NeoPixel リングの光の回転速度と色、圧電ブザーのビープ周期、LCD の数値表示の三つで同時に提示することで、運転者／作業者が「どれくらい近づいているか」「危険域かどうか」を一瞬で判断できるようにしている。
+超音波距離センサで壁との距離を計測し、その結果を NeoPixel リングの光の回転速度と色、圧電ブザーのビープ周期、LCD の表示の三つで同時に提示することで、利用者が「どれくらい近づいているか」「危険域かどうか」を一瞬で判断できるようにしている。
 
-具体的には、既存の車庫入れ支援システムや駐車警告システム\cite{gripon2026MicrocontrollerBasedCarParking}を参考にしつつ、単なる距離バー表示ではなく「距離に応じて LED パターンの進む速さ（テンポ）が変わる」ことに重点を置いた構成にしている。
-テンポの変化は人間が暗所でも認知しやすいことが知られており（TODO: flicker／テンポと注意喚起に関する文献URLを引用）、この性質を利用して危険度と距離変化を視覚と聴覚で伝えることを狙っている。
+具体的には、既存の車庫入れ支援システムや駐車警告システム\cite{gripon2026MicrocontrollerBasedCarParking}を参考にしつつ、単なる距離バー表示ではなく「距離に応じて LED パターンの進む速さが変わる」ことに重点を置いた構成にしている。
+距離変化に応じて表示テンポが変化する設計は、注意喚起を直感的に行ううえで有効であり、視覚と聴覚の両方で危険度を伝えることを狙っている\cite{toneRef,pulseInRef,hcsr04Ref}。
 
-% Tinkercad 上の回路・コード共有 URL（課題要件に応じて位置を調整）
 \url{https://www.tinkercad.com/things/7TQ30WMwQnm-26g1012/editel?sharecode=MZAnpTt5TfT3vMYNU4AxtiqTfitiM_Kg8O0pw0faDh0}
 
 \section{システム構成}
@@ -64,17 +63,25 @@
   \end{tabular}
 \end{table}
 
-回路図では、HC-SR04 の TRIG/ECHO ピンを Arduino Uno のデジタルピン（本システムでは 8 番と 9 番）に接続し、NeoPixel Ring は一本のデータ線（2 番ピン）と電源・GNDで制御する。
-圧電ブザーは 7 番ピンから ON/OFF 駆動し、LCD は I2C バス（SDA/SCL）経由で Arduino に接続している（具体的なアドレスは \lstinline|LCD_ADDR = 0x27| に設定）。
+回路図は図\ref{fig:circuit}に示す。
+HC-SR04 の TRIG/ECHO ピンを Arduino Uno のデジタルピン 8 番と 9 番に接続し、NeoPixel Ring は 2 番ピンのデータ線と電源・GNDで制御する。
+圧電ブザーは 7 番ピンから駆動し、LCD は I2C バス（SDA/SCL）経由で Arduino に接続している。
+
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.92\linewidth]{Figs/seq.pdf}
+  \caption{回路図}
+  \label{fig:circuit}
+\end{figure}
 
 各構成要素は、次の役割に分かれる。
 
 \begin{itemize}
-  \item HC-SR04: 壁までの距離を 2〜400cm の範囲で計測する距離センサ（TODO: HC-SR04仕様URL）。
+  \item HC-SR04: 壁までの距離を 2〜400cm の範囲で計測する距離センサ\cite{hcsr04Ref}。
   \item Arduino Uno: センサ値を読み取り、距離に応じた状態遷移と出力制御を行う中核マイコン。
   \item NeoPixel Ring24: LED 24個をリング状に配置し、距離に応じた回転パターンと色で危険度を視覚的に表示。
-  \item 圧電ブザー: 距離に応じたビープ周期で警告音を出すことで、視線がLEDから外れていても危険を認識できるようにする。
-  \item 16×2 I2C LCD: 距離値（cm）と SAFE / CAUTION / DANGER といった状態ラベルを文字で表示し、デバッグと詳細確認に用いる。
+  \item 圧電ブザー: 距離に応じたビープ周期で警告音を出すことで、視線が LED から外れていても危険を認識できるようにする。
+  \item 16×2 I2C LCD: 距離値（cm）と SAFE / CAUTION / DANGER といった状態ラベルを文字で表示し、UI として用いる。
 \end{itemize}
 
 \section{システムの説明}
@@ -84,29 +91,29 @@
 
 \subsection{超音波センサによる距離計測}
 
-HC-SR04 超音波距離センサは、TRIGピンに短いパルスを入力することで一定時間の超音波パルスを発射し、その反射波を ECHO ピンで受信する。
-ECHO ピンに現れるHIGHパルスの長さは「往復時間」に比例し、これに音速（約 340m/s）を掛けて半分にすることで障害物までの距離をcm単位で計算している（TODO: HC-SR04原理解説URL）。
+HC-SR04 超音波距離センサは、TRIG ピンに 10µs 程度の HIGH パルスを与えることで超音波を発射し、その反射波を ECHO ピンで受信する。
+ECHO ピンに現れる HIGH パルスの長さは往復時間に比例し、これに音速を掛けて半分にすることで障害物までの距離を算出できる\cite{hcsr04Ref}。
 
-本システムでは、Arduino 上で \lstinline|pulseIn(ECHO_PIN, HIGH, 30000)| を用いて最大 30ms までのパルス幅を計測し、\lstinline|duration * 0.034 / 2.0| により距離cmに変換している。
-測定に失敗した場合には最大距離（\lstinline|DIST_MAX_CM|）を返すことで、安全側に倒した扱いとし、誤った近距離判定で過剰に警告しないようにしている。
+本システムでは、Arduino 上で \lstinline|pulseIn(ECHO_PIN, HIGH, timeout)| を用いてパルス幅を計測し、\lstinline|duration * 0.0343 / 2.0| により距離 cm に変換している\cite{pulseInRef,hcsr04Ref}。
+測定に失敗した場合には最大距離を返すことで、安全側に倒した扱いとし、誤った近距離判定で過剰に警告しないようにしている\cite{pulseInRef}。
 
 \subsection{距離に応じた内部処理の流れ}
 
-Arduino は、取得した距離cmから「LEDパターンの更新周期（duration）」を計算し、その周期で状態遷移ジェネレータを進める。
-距離からdurationへのマッピングは \lstinline|map_distance_to_duration(int distance_cm)| 関数内部で行い、近距離ほど短いduration（＝更新が速い）、遠距離ほど長いduration（＝更新が遅い）になるように設計している。
+Arduino は、取得した距離 cm から「LED パターンの更新周期（duration）」を計算し、その周期で状態遷移ジェネレータを進める。
+距離から duration へのマッピングは \lstinline|map_distance_to_duration(int distance_cm)| 関数内部で行い、近距離ほど短い duration、遠距離ほど長い duration になるように設計している。
 
-距離とdurationの関係は、以下のような二乗カーブで定義している。
+距離と duration の関係は、以下のような二乗カーブで定義している。
 
 \begin{itemize}
   \item \lstinline|DIST_MIN_CM|〜\lstinline|DIST_MAX_CM| を 0〜1 の区間に正規化した値を \lstinline|x| とする。
-  \item \lstinline|t = x * x| とすることで、近距離側（xが小さい側）で急激に変化するカーブを作る。
+  \item \lstinline|t = x * x| とすることで、近距離側で急激に変化するカーブを作る。
   \item \lstinline|DURATION_MIN_MS|〜\lstinline|DURATION_MAX_MS| の間に \lstinline|t| をマッピングし、近距離ほど \lstinline|DURATION_MIN_MS| に近づくようにする。
 \end{itemize}
 
-これにより、暗所で距離が短くなるほど NeoPixel の回転速度とブザーのビープが「一気にせわしなくなる」挙動になり、危険度の上昇を直感的に感じ取れるようになる（TODO: flicker／テンポと注意喚起に関する文献URL）。
+これにより、距離が短くなるほど NeoPixel の回転速度とブザーのビープが一気にせわしなくなり、危険度の上昇を直感的に感じ取れるようになる。
 
-内部状態としては、\lstinline|current_state| を 0〜23 の整数で持ち、\lstinline|STATE_COUNT = NEOPIXEL_NUM| として NeoPixel 24個のインデックスに対応させている。
-状態遷移そのものは「ジェネレータ関数」を通して抽象化されており、距離はあくまで状態更新の「速さ」にのみ影響し、遷移の規則そのものは距離に依存しないようにしている。
+内部状態としては、\lstinline|current_state| を 0〜23 の整数で持ち、\lstinline|STATE_COUNT = NEOPIXEL_NUM| として NeoPixel 24 個のインデックスに対応させている。
+状態遷移そのものはジェネレータ関数を通して抽象化されており、距離はあくまで状態更新の速さにのみ影響し、遷移の規則そのものは距離に依存しないようにしている。
 
 \subsection{出力の振る舞い}
 
@@ -114,28 +121,27 @@ Arduino は、取得した距離cmから「LEDパターンの更新周期（dura
 
 \begin{itemize}
   \item 一定時間ごとに、選択されたジェネレータ（\lstinline|get_next|）を用いて \lstinline|current_state| を更新する。
-  \item NeoPixel リングに対して \lstinline|render_state(current_state, distance_cm)| を呼び出し、1点ランナー＋トレイルの回転パターンと距離に応じた色を表示する。
-  \item 圧電ブザーには \lstinline|update_buzzer(distance_cm)| で距離に応じたビープ周期を設定し、視覚・聴覚の両方で距離感を伝える。
-  \item LCD には \lstinline|update_lcd(distance_cm)| を用いて距離値と状態ラベル（SAFE/CAUTION/DANGER）を表示し、詳細確認とデバッグを可能にしている。
+  \item NeoPixel リングに対して \lstinline|render_state(current_state, distance_cm)| を呼び出し、1点ランナーとトレイルの回転パターンと距離に応じた色を表示する。
+  \item 圧電ブザーには \lstinline|update_buzzer(distance_cm)| で距離に応じた状態機械を適用し、\lstinline|tone()| と \lstinline|noTone()| の切り替えで危険度に応じたリズムを表現する\cite{toneRef,noToneRef}。
+  \item LCD には \lstinline|update_lcd(distance_cm)| を用いて距離値と状態ラベルを表示し、UI として扱う。
 \end{itemize}
 
-NeoPixel の色は距離レンジごとに単純な3段階に分けており、近距離で赤、中距離で黄、遠距離で緑とすることで、色と速度の両方で危険度を多重化している。
-ブザーの周期は LED の更新周期より少し長めに設定し（\lstinline|period_ms = dura * 2|）、光のバタつきと音が過度に同期してうるさくならないよう配慮している。
+NeoPixel の色は距離レンジごとに三段階に分けており、近距離で赤、中距離で黄、遠距離で緑とすることで、色と速度の両方で危険度を多重化している。
+ブザーは状態機械として実装し、\lstinline|tone()| と \lstinline|noTone()| の切り替えを明確化することで、危険度に応じたリズムを非ブロッキングに表現している\cite{toneRef,noToneRef}。
 
 \section{プログラムの説明}
 
 \subsection{プログラム全体の説明}
 
-本プログラムは、超音波センサから距離を取得し、それをもとに「状態遷移ジェネレータ」「NeoPixel 表示」「ブザー音」「LCD表示」を協調制御する構造を持つ。
-距離に依存するのは「パターンの進む速さ」と「色・ビープ周期」であり、状態遷移のルール（2進インクリメント、LFSR的巡回、モジュロ乗算ステップなど）はジェネレータとして独立に定義されている。
+本プログラムは、超音波センサから距離を取得し、それをもとに状態遷移ジェネレータ、NeoPixel 表示、ブザー音、LCD 表示を協調制御する構造を持つ。
+距離に依存するのはパターンの進む速さと色・ビープ周期であり、状態遷移のルールはジェネレータとして独立に定義されている。
 
-中心となる考え方は、「if/switch で状態をベタ書きせず、\lstinline|current_state -> next_state| を関数オブジェクトや関数ポインタで表現する」ことである。
-これにより、ジェネレータを差し替えながら同じ距離UI・同じNeoPixelレンダリングを保ったまま、内部の遷移パターンだけをテストできるようになっている（TODO: 関数ポインタ／状態機械の抽象化に関する文献URL）。
+中心となる考え方は、\lstinline|current_state -> next_state| を関数ポインタで表現することである。
+これにより、ジェネレータを差し替えながら同じ距離 UI と同じ NeoPixel レンダリングを保ったまま、内部の遷移パターンだけをテストできるようになっている。
 
 \subsection{関数の詳細}
 
 \subsubsection{setup関数}
-% setup関数の概要を説明すること．
 
 \begin{lstlisting}[firstnumber=1, caption=setup関数, label=setup]
 void setup() {
@@ -150,7 +156,7 @@ void setup() {
   ring.show();
 
   pinMode(BUZZER_PIN, OUTPUT);
-  digitalWrite(BUZZER_PIN, LOW);
+  noTone(BUZZER_PIN);
 
   lcd.init();
   lcd.backlight();
@@ -164,52 +170,54 @@ void setup() {
 }
 \end{lstlisting}
 
-% 内部処理の詳細を説明すること．
-
 \begin{itemize}
-  \item シリアルポートの初期化（\lstinline|Serial.begin(9600)|）により、デバッグ用の距離値出力を可能にしている。
+  \item シリアルポートの初期化により、デバッグ用の距離値出力を可能にしている。
   \item HC-SR04 の TRIG/ECHO ピンをそれぞれ OUTPUT/INPUT に設定し、距離測定が行えるようにする。
-  \item NeoPixel リングに対して \lstinline|begin| と \lstinline|setBrightness| を呼び、初期状態として全LEDを消灯したうえで明るさを中程度（40）に設定する。
-  \item ブザー用ピンを OUTPUT に設定し、初期状態では OFF（LOW）としておく。
-  \item LCD を初期化し、バックライトをONにしてからタイトル文字列 "Distance UI" を表示することで、システムが起動していることをユーザに示す。
-  \item 状態変数 \lstinline|current_state| および時間管理変数 \lstinline|last_update_ms|, \lstinline|last_beep_ms| を 0 に初期化し、ループ処理が正しいタイミングからスタートするようにする。
+  \item NeoPixel リングに対して begin と setBrightness を呼び、初期状態として全 LED を消灯したうえで明るさを中程度に設定する。
+  \item ブザー用ピンを OUTPUT に設定し、初期状態では noTone によって無音にする。
+  \item LCD を初期化し、バックライトを ON にしてからタイトル文字列 "Distance UI" を表示することで、システムが起動していることを示す。
+  \item 状態変数と時間管理変数を初期化し、ループ処理が正しいタイミングからスタートするようにする。
 \end{itemize}
 
 \subsubsection{loop関数}
-% loop関数の概要を説明を記載すること．
 
 \begin{lstlisting}[firstnumber=1, caption=loop関数, label=loop]
 void loop() {
-  int distance_cm = measure_distance_cm();
-  int duration_ms = map_distance_to_duration(distance_cm);
-
   unsigned long now = millis();
-  if (now - last_update_ms >= (unsigned long)duration_ms) {
-    last_update_ms = now;
 
-    const auto get_next = gens[state_logic_num];
-    current_state = get_next(current_state);
-
-    render_state(current_state, distance_cm);
+  if (now - last_sensor_ms >= SENSOR_INTERVAL_MS) {
+    last_sensor_ms = now;
+    measured_distance_cm = measure_distance_cm_raw();
+    filtered_distance_cm = smooth_distance_cm(filtered_distance_cm,
+                                               measured_distance_cm);
   }
 
-  update_buzzer(distance_cm);
-  update_lcd(distance_cm);
+  int duration_ms = map_distance_to_duration(filtered_distance_cm);
+  if (now - last_render_ms >= (unsigned long)duration_ms) {
+    last_render_ms = now;
+    current_state = get_next(current_state);
+    render_state(current_state, filtered_distance_cm);
+  }
+
+  update_buzzer(filtered_distance_cm);
+
+  if (now - last_lcd_ms >= LCD_UPDATE_INTERVAL_MS) {
+    last_lcd_ms = now;
+    update_lcd(filtered_distance_cm);
+  }
 }
 \end{lstlisting}
 
 \begin{itemize}
-  \item 毎ループでまず \lstinline|measure_distance_cm()| を呼び、現在の障害物との距離をcm単位で取得する。
-  \item \lstinline|map_distance_to_duration(distance_cm)| により、その距離を「状態更新間隔（ms）」にマッピングし、近いほど短い周期、遠いほど長い周期となるように調整する。
-  \item \lstinline|millis()| から現在時刻を取得し、前回の更新時刻 \lstinline|last_update_ms| との差が \lstinline|duration_ms| 以上になっていたら、状態遷移と表示更新を行う。
-  \item 状態遷移は \lstinline|gens[state_logic_num]| から選ばれるジェネレータ関数ポインタ（インクリメント／LFSR／モジュロ乗算など）を通じて実行され、if/switchを使わずに\\
-        \lstinline|current_state = get_next(current_state)| の形で次状態を求めている。
-  \item \lstinline|render_state(current_state, distance_cm)| では、現在の状態と距離をもとに NeoPixel リングの1点ランナー＋トレイルパターンを描画し、回転速度と色で危険度を視覚的に表現する。
-  \item LEDの更新タイミングに関係なく、ブザーとLCDは毎ループで \lstinline|update_buzzer(distance_cm)| と \lstinline|update_lcd(distance_cm)| によって更新され、距離情報を音と文字でも補完している。
+  \item 毎ループで現在時刻を取得し、センサ更新・LED 更新・ブザー更新・LCD 更新を個別の周期で処理する。
+  \item 距離計測は一定間隔で行い、取得した値は平滑化して利用することで、表示のちらつきを抑えている。
+  \item \lstinline|map_distance_to_duration(distance_cm)| により、距離を状態更新間隔に変換し、近いほど短い周期、遠いほど長い周期となるように調整する。
+  \item 状態遷移は \lstinline|gens[state_logic_num]| から選ばれるジェネレータ関数ポインタを通じて実行され、\lstinline|current_state = get_next(current_state)| の形で次状態を求めている。
+  \item \lstinline|render_state(current_state, distance_cm)| では、現在の状態と距離をもとに NeoPixel リングの1点ランナーとトレイルパターンを描画し、回転速度と色で危険度を視覚的に表現する。
+  \item ブザーと LCD は LED 更新と独立して更新され、距離情報を音と文字でも補完している。
 \end{itemize}
 
 \subsubsection{measure\_distance\_cm関数}
-% 自作関数の概要を説明を記載すること．自作関数がなければ削除してください．
 
 \begin{lstlisting}[firstnumber=1, caption=measure\_distance\_cm関数, label=measure_distance]
 int measure_distance_cm() {
@@ -228,12 +236,10 @@ int measure_distance_cm() {
 }
 \end{lstlisting}
 
-
-
 \begin{itemize}
-  \item TRIGピンを一度LOWにした後、10µsだけHIGHにすることでHC-SR04に超音波パルスの発射を指示する。
-  \item ECHOピンに現れるHIGHパルスの長さを \lstinline|pulseIn| で計測し、その値をマイクロ秒単位の往復時間とみなす。
-  \item \lstinline|duration * 0.034 / 2.0| により、音速（約 0.034cm/µs）から距離cmを計算する。
+  \item TRIG ピンを一度 LOW にした後、10µs だけ HIGH にすることで HC-SR04 に超音波パルスの発射を指示する。
+  \item ECHO ピンに現れる HIGH パルスの長さを \lstinline|pulseIn| で計測し、その値をマイクロ秒単位の往復時間とみなす。
+  \item \lstinline|duration * 0.0343 / 2.0| により、音速から距離 cm を計算する。
   \item タイムアウトや異常時には \lstinline|duration == 0| となるため、その場合は \lstinline|DIST_MAX_CM| を返すことで安全側に倒した距離判定とする。
 \end{itemize}
 
@@ -242,15 +248,15 @@ int measure_distance_cm() {
 \section{動作例}
 % スクショを使ってシステムがどのように動作するか説明すること．
 
-ここでは、Tinkercad 上のシミュレーション画面や実機写真を用いて、距離に応じてNeoPixelリングの回転速度・色、ブザーのビープ周期、LCDの表示がどのように変化するかを示す。
+ここでは、Tinkercad 上のシミュレーション画面や実機写真を用いて、距離に応じて NeoPixel リングの回転速度・色、ブザーのビープ周期、LCD の表示がどのように変化するかを示す。
 
 \begin{itemize}
-  \item 遠距離（例: 150cm以上）では、NeoPixelの回転はゆっくり（数Hz程度）で、色は緑、ブザーは低頻度で鳴り、LCDには "SAFE" と表示される。
-  \item 中距離（例: 50〜100cm）では、回転が中程度の速さになり、色は黄、ブザーのビープもやや頻繁になり、LCDには "CAUTION" と表示される。
-  \item 近距離（例: 50cm未満）では、回転がかなり速くなり、色は赤、ブザーが高頻度で鳴り続け、LCDには "DANGER" と表示される。
+  \item 遠距離（例: 150cm 以上）では、NeoPixel の回転はゆっくりで、色は緑、ブザーは低頻度で鳴り、LCD には "SAFE" と表示される。
+  \item 中距離（例: 50〜100cm）では、回転が中程度の速さになり、色は黄、ブザーのビープもやや頻繁になり、LCD には "CAUTION" と表示される。
+  \item 近距離（例: 50cm 未満）では、回転がかなり速くなり、色は赤、ブザーが高頻度で鳴り、LCD には "DANGER" と表示される。
 \end{itemize}
 
-これらの動作例から、距離が変化した際に「ヤバさの度合い」がテンポと色によって視覚・聴覚的に分かることを確認できる。
+これらの動作例から、距離が変化した際に危険度がテンポと色によって視覚・聴覚的に分かることを確認できる。
 
 \section{アピールポイント}
 % 習っていないセンサを使った，センサを複数使った，制御や出力をこだわったなどを説明すること．
@@ -259,12 +265,9 @@ int measure_distance_cm() {
 本システムのアピールポイントは、以下の三点である。
 
 \begin{itemize}
-  \item 距離の UI を「数値」ではなく「パターンの進む速さ」として設計した点。
-        単純なバー表示ではなく、距離に応じてNeoPixelの回転速度を変えることで、暗所でも危険度と距離変化の勢いを直感的に把握できるようにしている。これは既存の駐車支援システムがビープ音の間隔で距離を伝える構造を視覚に移植したものと言える（TODO: 駐車センサのUIに関する文献URL）。
-  \item 状態遷移ロジックを関数ポインタ（ジェネレータ）で抽象化した点。
-        ifやswitchに頼らず、\lstinline|current_state -> next_state| を関数群として定義することで、距離UIや表示ロジックを変えずに内部の遷移パターンだけを差し替えて比較できる。これにより、2進インクリメント、LFSR、グレイコード風などの複数の遷移を同じフレームワークでテストできる柔軟性を持たせている。
-  \item NeoPixelリング＋ブザー＋LCDという三層出力構成。
-        視覚はリングの動きと色、聴覚はブザーのテンポ、数値はLCDの距離表示という三つのチャネルを用意することで、暗所での安全性とデバッグのしやすさの両立を図っている。単一の出力に依存せず、ユーザの状況に応じて複数の手がかりが得られるようにした点が工夫である。
+  \item 距離の UI を「数値」ではなく「パターンの進む速さ」として設計した点。単純なバー表示ではなく、距離に応じて NeoPixel の回転速度を変えることで、暗所でも危険度と距離変化の勢いを直感的に把握できるようにしている。
+  \item 状態遷移ロジックを関数ポインタ（ジェネレータ）で抽象化した点。\lstinline|current_state -> next_state| を関数群として定義することで、距離 UI や表示ロジックを変えずに内部の遷移パターンだけを差し替えて比較できる。
+  \item NeoPixel リング＋ブザー＋LCD という三層出力構成。視覚はリングの動きと色、聴覚はブザーのテンポ、数値は LCD の距離表示という三つのチャネルを用意することで、暗所での安全性とデバッグのしやすさの両立を図っている。
 \end{itemize}
 
 \printbibliography[title=参考文献]
