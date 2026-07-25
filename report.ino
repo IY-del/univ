@@ -17,29 +17,46 @@ const uint8_t NEOPIXEL_NUM = 24;
 const uint8_t BUZZER_PIN = 7;
 
 // LCD (16x2 I2C)
-const uint8_t LCD_ADDR = 0x27; // モジュールに合わせて調整
+const uint8_t LCD_ADDR = 0x27;
 const uint8_t LCD_COLS = 16;
 const uint8_t LCD_ROWS = 2;
 
-// 距離・時間関連
-const uint16_t DIST_MIN_CM = 20;      // これより近いと危険域扱い
-const uint16_t DIST_MAX_CM = 200;     // これ以上は「遠い」とみなす
-const uint16_t DURATION_MIN_MS = 40;  // パターン更新間隔の最小（約25Hz相当）
-const uint16_t DURATION_MAX_MS = 500; // パターン更新間隔の最大（2Hz相当）
+// 距離閾値
+const uint16_t DIST_MIN_CM = 20;      // 最短扱い
+const uint16_t DIST_MAX_CM = 200;     // 最長扱い
+const uint16_t DIST_DANGER_CM = 50;   // 危険
+const uint16_t DIST_CAUTION_CM = 100; // 注意
 
-// 状態空間：ここでは「位置系」なので0〜23
+// HC-SR04計測制御
+const uint32_t SENSOR_INTERVAL_MS = 35;   // 約29ms以上を確保
+const uint32_t ECHO_TIMEOUT_US = 15000UL; // 200cm相当より少し余裕を持たせる
+
+// UI更新間隔
+const uint16_t DURATION_MIN_MS = 40;
+const uint16_t DURATION_MAX_MS = 500;
+const uint16_t LCD_UPDATE_INTERVAL_MS = 200;
+
+// 状態空間
 const uint8_t STATE_COUNT = NEOPIXEL_NUM;
 
 // ジェネレータの種類
-enum StateLogic : uint16_t
+enum StateLogic : uint8_t
 {
     STATE_LOGIC_INC,
     STATE_LOGIC_LFSR,
     STATE_LOGIC_MOD
 };
 
-// generatorを選ぶ
-const uint8_t state_logic_num = STATE_LOGIC_INC;
+// 使用するgenerator
+const StateLogic state_logic_num = STATE_LOGIC_INC;
+
+// 危険度
+enum DangerLevel : uint8_t
+{
+    LEVEL_SAFE,
+    LEVEL_CAUTION,
+    LEVEL_DANGER
+};
 
 // ==============================
 // ライブラリオブジェクト
@@ -51,48 +68,99 @@ LiquidCrystal_I2C lcd(LCD_ADDR, LCD_COLS, LCD_ROWS);
 // ==============================
 // ジェネレータ (state -> next_state)
 // ==============================
-typedef int (*Generator)(int);
+
+typedef uint8_t (*Generator)(uint8_t);
+
+constexpr uint8_t LFSR_BITS = 0x1F;
 
 Generator gens[] = {
-    [](int current) // シンプルインクリメント (ランナー)
+    [](uint8_t current) -> uint8_t
     {
         return (current + 1) % STATE_COUNT;
     },
-    [](int current) // 簡易LFSR的 (擬似ランダム巡回)
+    [](uint8_t current) -> uint8_t
     {
-        if (current == 0)
-            current = 1;
+        uint8_t x = (current == 0 || current >= STATE_COUNT) ? 1 : current;
+        for (;;)
+        {
+            const bool feedback = ((x >> 0) ^ (x >> 2)) & 0x01;
+            x = ((x >> 1) | (uint8_t(feedback) << 4)) & LFSR_BITS;
 
-        int x = current & 0x1F; // 5bit
-        bool b = ((x >> 0) ^ (x >> 2)) & 1;
-        x = (x >> 1) | (uint8_t(b) << 4);
-
-        if (x == 0)
-            x = 1;
-        int next = x % STATE_COUNT;
-        return next;
+            if (x != 0 && x < STATE_COUNT)
+            {
+                return x;
+            }
+        }
     },
-    [](int current) // モジュロ乗算的ステップ
+    [](uint8_t current) -> uint8_t
     {
-        const uint8_t a = 5; // N=24に対してそれなりに散る値
-        int next = (current * a + 1) % STATE_COUNT;
-        return next;
+        constexpr uint8_t a = 5;
+        return (current * a + 1) % STATE_COUNT;
     }};
 
-const auto get_next = gens[state_logic_num];
+Generator get_next = gens[state_logic_num];
 
 // ==============================
 // グローバル状態
 // ==============================
 
-int current_state = 0;
-unsigned long last_update_ms = 0;
+uint8_t current_state = 0;
+
+unsigned long last_sensor_ms = 0;
+unsigned long last_render_ms = 0;
+unsigned long last_lcd_ms = 0;
+unsigned long last_beep_toggle_ms = 0;
+
+int measured_distance_cm = DIST_MAX_CM;
+int filtered_distance_cm = DIST_MAX_CM;
+
+bool buzzer_on = false;
+
+// ==============================
+// ヘルパ
+// ==============================
+
+DangerLevel get_danger_level(int distance_cm)
+{
+    if (distance_cm <= (int)DIST_DANGER_CM)
+    {
+        return LEVEL_DANGER;
+    }
+    if (distance_cm <= (int)DIST_CAUTION_CM)
+    {
+        return LEVEL_CAUTION;
+    }
+    return LEVEL_SAFE;
+}
+
+int clamp_distance_cm(int distance_cm)
+{
+    if (distance_cm < (int)DIST_MIN_CM)
+    {
+        return DIST_MIN_CM;
+    }
+    if (distance_cm > (int)DIST_MAX_CM)
+    {
+        return DIST_MAX_CM;
+    }
+    return distance_cm;
+}
+
+void lcd_print_padded(const char *text)
+{
+    lcd.print(text);
+    size_t len = strlen(text);
+    for (size_t i = len; i < LCD_COLS; ++i)
+    {
+        lcd.print(' ');
+    }
+}
 
 // ==============================
 // 距離測定 (HC-SR04)
 // ==============================
 
-int measure_distance_cm()
+int measure_distance_cm_raw()
 {
     digitalWrite(TRIG_PIN, LOW);
     delayMicroseconds(2);
@@ -100,13 +168,21 @@ int measure_distance_cm()
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
 
-    long duration = pulseIn(ECHO_PIN, HIGH, 30000); // タイムアウト30ms
+    unsigned long duration = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
     if (duration == 0)
     {
-        return DIST_MAX_CM; // 失敗時は「遠い」
+        return DIST_MAX_CM;
     }
-    int distance = (int)(duration * 0.034 / 2.0); // cm
-    return distance;
+
+    int distance = (int)(duration * 0.0343f / 2.0f);
+    return clamp_distance_cm(distance);
+}
+
+// 軽い平滑化: EMA
+int smooth_distance_cm(int prev_cm, int new_cm)
+{
+    // 0.7 * prev + 0.3 * new
+    return (prev_cm * 7 + new_cm * 3) / 10;
 }
 
 // ==============================
@@ -116,14 +192,17 @@ int measure_distance_cm()
 int map_distance_to_duration(int distance_cm)
 {
     if (distance_cm <= (int)DIST_MIN_CM)
+    {
         return DURATION_MIN_MS;
+    }
     if (distance_cm >= (int)DIST_MAX_CM)
+    {
         return DURATION_MAX_MS;
+    }
 
     float x = (float)(distance_cm - DIST_MIN_CM) /
               (float)(DIST_MAX_CM - DIST_MIN_CM);
 
-    // 近距離を強調する二乗カーブ
     float t = x * x;
 
     float dura = DURATION_MIN_MS +
@@ -136,19 +215,17 @@ int map_distance_to_duration(int distance_cm)
 // NeoPixel ring24 のrender
 // ==============================
 
-uint32_t color_from_distance(int distance_cm)
+uint32_t color_from_level(DangerLevel level)
 {
-    if (distance_cm <= 50)
+    switch (level)
     {
-        return ring.Color(50, 0, 0); // 近: 赤
-    }
-    else if (distance_cm <= 100)
-    {
-        return ring.Color(50, 25, 0); // 中: 黄
-    }
-    else
-    {
-        return ring.Color(0, 50, 0); // 遠: 緑
+    case LEVEL_DANGER:
+        return ring.Color(50, 0, 0);
+    case LEVEL_CAUTION:
+        return ring.Color(50, 25, 0);
+    case LEVEL_SAFE:
+    default:
+        return ring.Color(0, 50, 0);
     }
 }
 
@@ -156,7 +233,8 @@ void render_state(uint8_t state, int distance_cm)
 {
     ring.clear();
 
-    uint32_t base = color_from_distance(distance_cm);
+    DangerLevel level = get_danger_level(distance_cm);
+    uint32_t base = color_from_level(level);
 
     uint8_t idx = state % NEOPIXEL_NUM;
     ring.setPixelColor(idx, base);
@@ -185,18 +263,24 @@ void render_state(uint8_t state, int distance_cm)
 // ブザー
 // ==============================
 
-unsigned long last_beep_ms = 0;
-bool buzzer_on = false;
-
 void update_buzzer(int distance_cm)
 {
-    int dura = map_distance_to_duration(distance_cm);
-    int period_ms = dura * 2;
-
+    DangerLevel level = get_danger_level(distance_cm);
     unsigned long now = millis();
-    if (now - last_beep_ms >= (unsigned long)period_ms)
+
+    if (level == LEVEL_SAFE)
     {
-        last_beep_ms = now;
+        buzzer_on = false;
+        digitalWrite(BUZZER_PIN, LOW);
+        return;
+    }
+
+    int duration_ms = map_distance_to_duration(distance_cm);
+    int toggle_interval_ms = duration_ms;
+
+    if (now - last_beep_toggle_ms >= (unsigned long)toggle_interval_ms)
+    {
+        last_beep_toggle_ms = now;
         buzzer_on = !buzzer_on;
         digitalWrite(BUZZER_PIN, buzzer_on ? HIGH : LOW);
     }
@@ -211,20 +295,27 @@ void update_lcd(int distance_cm)
     lcd.setCursor(0, 0);
     lcd.print("Dist:");
     lcd.print(distance_cm);
-    lcd.print("cm     ");
+    lcd.print("cm");
+    int used = 5 + String(distance_cm).length() + 2;
+    for (int i = used; i < LCD_COLS; ++i)
+    {
+        lcd.print(' ');
+    }
 
     lcd.setCursor(0, 1);
-    if (distance_cm <= 50)
+    DangerLevel level = get_danger_level(distance_cm);
+    switch (level)
     {
-        lcd.print("DANGER             ");
-    }
-    else if (distance_cm <= 100)
-    {
-        lcd.print("CAUTION            ");
-    }
-    else
-    {
-        lcd.print("SAFE                 ");
+    case LEVEL_DANGER:
+        lcd_print_padded("DANGER");
+        break;
+    case LEVEL_CAUTION:
+        lcd_print_padded("CAUTION");
+        break;
+    case LEVEL_SAFE:
+    default:
+        lcd_print_padded("SAFE");
+        break;
     }
 }
 
@@ -251,11 +342,18 @@ void setup()
     lcd.backlight();
     lcd.clear();
     lcd.setCursor(0, 0);
-    lcd.print("Distance UI");
+    lcd_print_padded("Distance UI");
+    lcd.setCursor(0, 1);
+    lcd_print_padded("Initializing...");
 
     current_state = 0;
-    last_update_ms = 0;
-    last_beep_ms = 0;
+    measured_distance_cm = DIST_MAX_CM;
+    filtered_distance_cm = DIST_MAX_CM;
+
+    last_sensor_ms = 0;
+    last_render_ms = 0;
+    last_lcd_ms = 0;
+    last_beep_toggle_ms = 0;
 }
 
 // ==============================
@@ -264,18 +362,38 @@ void setup()
 
 void loop()
 {
-    int distance_cm = measure_distance_cm();
-    int duration_ms = map_distance_to_duration(distance_cm);
-
     unsigned long now = millis();
-    if (now - last_update_ms >= (unsigned long)duration_ms)
-    {
-        last_update_ms = now;
 
-        current_state = get_next(current_state);
-        render_state(current_state, distance_cm);
+    // 1. センサー更新
+    if (now - last_sensor_ms >= SENSOR_INTERVAL_MS)
+    {
+        last_sensor_ms = now;
+        measured_distance_cm = measure_distance_cm_raw();
+        filtered_distance_cm = smooth_distance_cm(filtered_distance_cm, measured_distance_cm);
+
+        Serial.print("raw=");
+        Serial.print(measured_distance_cm);
+        Serial.print("cm, filtered=");
+        Serial.print(filtered_distance_cm);
+        Serial.println("cm");
     }
 
-    update_buzzer(distance_cm);
-    update_lcd(distance_cm);
+    // 2. NeoPixel更新
+    int duration_ms = map_distance_to_duration(filtered_distance_cm);
+    if (now - last_render_ms >= (unsigned long)duration_ms)
+    {
+        last_render_ms = now;
+        current_state = get_next(current_state);
+        render_state(current_state, filtered_distance_cm);
+    }
+
+    // 3. ブザー更新
+    update_buzzer(filtered_distance_cm);
+
+    // 4. LCD更新
+    if (now - last_lcd_ms >= LCD_UPDATE_INTERVAL_MS)
+    {
+        last_lcd_ms = now;
+        update_lcd(filtered_distance_cm);
+    }
 }
