@@ -35,6 +35,10 @@ const uint16_t DURATION_MIN_MS = 40;
 const uint16_t DURATION_MAX_MS = 500;
 const uint16_t LCD_UPDATE_INTERVAL_MS = 200;
 
+// ブザー周波数
+const uint16_t BUZZER_FREQ_NEAR_HZ = 2200;
+const uint16_t BUZZER_FREQ_FAR_HZ = 800;
+
 // 状態空間
 const uint8_t STATE_COUNT = NEOPIXEL_NUM;
 
@@ -115,12 +119,10 @@ uint8_t current_state = 0;
 unsigned long last_sensor_ms = 0;
 unsigned long last_render_ms = 0;
 unsigned long last_lcd_ms = 0;
-unsigned long last_beep_toggle_ms = 0;
+unsigned long last_beep_ms = 0;
 
 int measured_distance_cm = DIST_MAX_CM;
 int filtered_distance_cm = DIST_MAX_CM;
-
-bool buzzer_on = false;
 
 // ==============================
 // ヘルパ
@@ -169,6 +171,26 @@ void lcd_print_padded(const char *text)
     {
         lcd.print(' ');
     }
+}
+
+int map_distance_to_buzzer_freq(int distance_cm)
+{
+    if (distance_cm <= (int)DIST_MIN_CM)
+    {
+        return BUZZER_FREQ_NEAR_HZ;
+    }
+    if (distance_cm >= (int)DIST_MAX_CM)
+    {
+        return BUZZER_FREQ_FAR_HZ;
+    }
+
+    float x = (float)(distance_cm - DIST_MIN_CM) /
+              (float)(DIST_MAX_CM - DIST_MIN_CM);
+
+    float f = BUZZER_FREQ_NEAR_HZ +
+              (BUZZER_FREQ_FAR_HZ - BUZZER_FREQ_NEAR_HZ) * x;
+
+    return (int)f;
 }
 
 // ==============================
@@ -220,6 +242,7 @@ int map_distance_to_duration(int distance_cm)
     float x = (float)(distance_cm - DIST_MIN_CM) /
               (float)(DIST_MAX_CM - DIST_MIN_CM);
 
+    // 近距離を強調
     float t = x * x;
 
     float dura = DURATION_MIN_MS +
@@ -287,19 +310,21 @@ void update_buzzer(int distance_cm)
 
     if (level == LEVEL_SAFE)
     {
-        buzzer_on = false;
-        digitalWrite(BUZZER_PIN, LOW);
+        noTone(BUZZER_PIN);
         return;
     }
 
     int duration_ms = map_distance_to_duration(distance_cm);
-    int toggle_interval_ms = duration_ms;
+    int tone_freq_hz = map_distance_to_buzzer_freq(distance_cm);
 
-    if (now - last_beep_toggle_ms >= (unsigned long)toggle_interval_ms)
+    if (now - last_beep_ms >= (unsigned long)(duration_ms * 2))
     {
-        last_beep_toggle_ms = now;
-        buzzer_on = !buzzer_on;
-        digitalWrite(BUZZER_PIN, buzzer_on ? HIGH : LOW);
+        last_beep_ms = now;
+        noTone(BUZZER_PIN);
+    }
+    else
+    {
+        tone(BUZZER_PIN, tone_freq_hz);
     }
 }
 
@@ -309,32 +334,31 @@ void update_buzzer(int distance_cm)
 
 void update_lcd(int distance_cm)
 {
-    lcd.setCursor(0, 0);
-    lcd.print("Dist:");
-    lcd.print(distance_cm);
-    lcd.print("cm");
+    char line0[17];
+    char line1[17];
 
-    int used = 5 + String(distance_cm).length() + 2;
-    for (int i = used; i < LCD_COLS; ++i)
-    {
-        lcd.print(' ');
-    }
+    snprintf(line0, sizeof(line0), "Dist:%3dcm", distance_cm);
 
-    lcd.setCursor(0, 1);
     DangerLevel level = get_danger_level(distance_cm);
     switch (level)
     {
     case LEVEL_DANGER:
-        lcd_print_padded("DANGER");
+        snprintf(line1, sizeof(line1), "DANGER");
         break;
     case LEVEL_CAUTION:
-        lcd_print_padded("CAUTION");
+        snprintf(line1, sizeof(line1), "CAUTION");
         break;
     case LEVEL_SAFE:
     default:
-        lcd_print_padded("SAFE");
+        snprintf(line1, sizeof(line1), "SAFE");
         break;
     }
+
+    lcd.setCursor(0, 0);
+    lcd_print_padded(line0);
+
+    lcd.setCursor(0, 1);
+    lcd_print_padded(line1);
 }
 
 // ==============================
@@ -354,7 +378,7 @@ void setup()
     ring.show();
 
     pinMode(BUZZER_PIN, OUTPUT);
-    digitalWrite(BUZZER_PIN, LOW);
+    noTone(BUZZER_PIN);
 
     lcd.init();
     lcd.backlight();
@@ -371,7 +395,10 @@ void setup()
     last_sensor_ms = 0;
     last_render_ms = 0;
     last_lcd_ms = 0;
-    last_beep_toggle_ms = 0;
+    last_beep_ms = 0;
+
+    Serial.print("echo_timeout_us=");
+    Serial.println(get_echo_timeout_us());
 }
 
 // ==============================
