@@ -372,9 +372,6 @@ void setup()
     last_render_ms = 0;
     last_lcd_ms = 0;
     last_beep_toggle_ms = 0;
-
-    Serial.print("echo_timeout_us=");
-    Serial.println(get_echo_timeout_us());
 }
 
 // ==============================
