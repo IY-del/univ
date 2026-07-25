@@ -22,8 +22,8 @@ const uint8_t LCD_COLS = 16;
 const uint8_t LCD_ROWS = 2;
 
 // 距離閾値
-const uint16_t DIST_MIN_CM = 20;      // 最短扱い
-const uint16_t DIST_MAX_CM = 200;     // 最長扱い
+const uint16_t DIST_MIN_CM = 2.8;     // 最短扱い
+const uint16_t DIST_MAX_CM = 335;     // 最長扱い
 const uint16_t DIST_DANGER_CM = 50;   // 危険
 const uint16_t DIST_CAUTION_CM = 100; // 注意
 
