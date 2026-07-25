@@ -1,5 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <LiquidCrystal_I2C.h>
+#include <string.h>
 
 // ==============================
 // 定数定義
@@ -22,13 +23,21 @@ const uint8_t LCD_COLS = 16;
 const uint8_t LCD_ROWS = 2;
 
 // 距離閾値
-const uint16_t DIST_MIN_CM = 2;       // 最短扱い
-const uint16_t DIST_MAX_CM = 335;     // 最長扱い
-const uint16_t DIST_DANGER_CM = 50;   // 危険
-const uint16_t DIST_CAUTION_CM = 100; // 注意
+const uint16_t DIST_MIN_CM = 2;
+const uint16_t DIST_MAX_CM = 335;
+const uint16_t DIST_DANGER_CM = 50;
+const uint16_t DIST_CAUTION_CM = 100;
+
+// UIマッピング用レンジ
+const uint16_t UI_MIN_CM = DIST_MIN_CM;
+const uint16_t UI_MAX_CM = 180;
 
 // HC-SR04計測制御
-const uint32_t SENSOR_INTERVAL_MS = 35; // 約29ms以上を確保
+const uint32_t SENSOR_INTERVAL_MS = 35;
+const uint32_t ECHO_TIMEOUT_US = 12000;
+
+// 測距安定化
+const uint8_t DIST_BUFFER_SIZE = 3;
 
 // UI更新間隔
 const uint16_t DURATION_MIN_MS = 40;
@@ -78,9 +87,6 @@ enum BuzzerState : uint8_t
 // 型定義エラー対策のプロトタイプ
 DangerLevel get_danger_level(int distance_cm);
 uint32_t color_from_level(DangerLevel level);
-void render_state(uint8_t state, int distance_cm);
-void update_buzzer(int distance_cm);
-void update_lcd(int distance_cm);
 void apply_buzzer_profile(DangerLevel level, int distance_cm);
 
 // ==============================
@@ -138,6 +144,11 @@ unsigned long last_lcd_ms = 0;
 int measured_distance_cm = DIST_MAX_CM;
 int filtered_distance_cm = DIST_MAX_CM;
 
+// 測距バッファ
+int dist_buffer[DIST_BUFFER_SIZE] = {DIST_MAX_CM, DIST_MAX_CM, DIST_MAX_CM};
+uint8_t dist_buffer_index = 0;
+uint8_t dist_buffer_filled = 0;
+
 // ブザー状態機械
 BuzzerState buzzer_state = BUZZER_SILENT;
 unsigned long buzzer_phase_started_ms = 0;
@@ -151,9 +162,6 @@ int buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
 
 uint32_t get_echo_timeout_us()
 {
-    // 距離cm -> 往復時間us
-    // time_us = distance_cm * 2 / 0.0343
-    // 少し余裕を持たせて +1000us
     const float timeout_us = (2.0f * DIST_MAX_CM / 0.0343f) + 1000.0f;
     return (uint32_t)timeout_us;
 }
@@ -194,19 +202,53 @@ void lcd_print_padded(const char *text)
     }
 }
 
+int median_distance_cm(int a, int b, int c)
+{
+    if (a > b)
+    {
+        int t = a;
+        a = b;
+        b = t;
+    }
+    if (b > c)
+    {
+        int t = b;
+        b = c;
+        c = t;
+    }
+    if (a > b)
+    {
+        int t = a;
+        a = b;
+        b = t;
+    }
+    return b;
+}
+
+void push_distance_sample(int raw_cm)
+{
+    dist_buffer[dist_buffer_index] = raw_cm;
+    dist_buffer_index = (dist_buffer_index + 1) % DIST_BUFFER_SIZE;
+
+    if (dist_buffer_filled < DIST_BUFFER_SIZE)
+    {
+        dist_buffer_filled++;
+    }
+}
+
 int map_distance_to_buzzer_freq(int distance_cm)
 {
-    if (distance_cm <= (int)DIST_MIN_CM)
+    if (distance_cm <= (int)UI_MIN_CM)
     {
         return BUZZER_FREQ_NEAR_HZ;
     }
-    if (distance_cm >= (int)DIST_MAX_CM)
+    if (distance_cm >= (int)UI_MAX_CM)
     {
         return BUZZER_FREQ_FAR_HZ;
     }
 
-    float x = (float)(distance_cm - DIST_MIN_CM) /
-              (float)(DIST_MAX_CM - DIST_MIN_CM);
+    float x = (float)(distance_cm - UI_MIN_CM) /
+              (float)(UI_MAX_CM - UI_MIN_CM);
 
     float f = BUZZER_FREQ_NEAR_HZ +
               (BUZZER_FREQ_FAR_HZ - BUZZER_FREQ_NEAR_HZ) * x;
@@ -260,10 +302,22 @@ int measure_distance_cm_raw()
     return clamp_distance_cm(distance);
 }
 
+int read_distance_cm()
+{
+    int raw_cm = measure_distance_cm_raw();
+    push_distance_sample(raw_cm);
+
+    if (dist_buffer_filled < DIST_BUFFER_SIZE)
+    {
+        return raw_cm;
+    }
+
+    return median_distance_cm(dist_buffer[0], dist_buffer[1], dist_buffer[2]);
+}
+
 // 軽い平滑化: EMA
 int smooth_distance_cm(int prev_cm, int new_cm)
 {
-    // 0.7 * prev + 0.3 * new
     return (prev_cm * 7 + new_cm * 3) / 10;
 }
 
@@ -273,19 +327,18 @@ int smooth_distance_cm(int prev_cm, int new_cm)
 
 int map_distance_to_duration(int distance_cm)
 {
-    if (distance_cm <= (int)DIST_MIN_CM)
+    if (distance_cm <= (int)UI_MIN_CM)
     {
         return DURATION_MIN_MS;
     }
-    if (distance_cm >= (int)DIST_MAX_CM)
+    if (distance_cm >= (int)UI_MAX_CM)
     {
         return DURATION_MAX_MS;
     }
 
-    float x = (float)(distance_cm - DIST_MIN_CM) /
-              (float)(DIST_MAX_CM - DIST_MIN_CM);
+    float x = (float)(distance_cm - UI_MIN_CM) /
+              (float)(UI_MAX_CM - UI_MIN_CM);
 
-    // 近距離を強調
     float t = x * x;
 
     float dura = DURATION_MIN_MS +
@@ -486,7 +539,7 @@ void loop()
     if (now - last_sensor_ms >= SENSOR_INTERVAL_MS)
     {
         last_sensor_ms = now;
-        measured_distance_cm = measure_distance_cm_raw();
+        measured_distance_cm = read_distance_cm();
         filtered_distance_cm = smooth_distance_cm(filtered_distance_cm, measured_distance_cm);
 
         Serial.print("raw=");
