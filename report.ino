@@ -1,5 +1,6 @@
 #include <Adafruit_NeoPixel.h>
 #include <LiquidCrystal_I2C.h>
+#include <stdio.h>
 
 // ==============================
 // 定数定義
@@ -61,6 +62,14 @@ enum DangerLevel : uint8_t
     LEVEL_DANGER
 };
 
+// ブザー状態
+enum BuzzerState : uint8_t
+{
+    BUZZER_SILENT,
+    BUZZER_BEEP_ON,
+    BUZZER_BEEP_OFF
+};
+
 // 型定義エラー対策のプロトタイプ
 DangerLevel get_danger_level(int distance_cm);
 uint32_t color_from_level(DangerLevel level);
@@ -119,10 +128,15 @@ uint8_t current_state = 0;
 unsigned long last_sensor_ms = 0;
 unsigned long last_render_ms = 0;
 unsigned long last_lcd_ms = 0;
-unsigned long last_beep_ms = 0;
 
 int measured_distance_cm = DIST_MAX_CM;
 int filtered_distance_cm = DIST_MAX_CM;
+
+// ブザー状態機械
+BuzzerState buzzer_state = BUZZER_SILENT;
+unsigned long buzzer_phase_started_ms = 0;
+int buzzer_interval_ms = DURATION_MAX_MS;
+int buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
 
 // ==============================
 // ヘルパ
@@ -305,26 +319,54 @@ void render_state(uint8_t state, int distance_cm)
 
 void update_buzzer(int distance_cm)
 {
-    DangerLevel level = get_danger_level(distance_cm);
-    unsigned long now = millis();
+    const DangerLevel level = get_danger_level(distance_cm);
+    const unsigned long now = millis();
 
+    // 距離に応じたパラメータは常に更新
+    buzzer_interval_ms = map_distance_to_duration(distance_cm);
+    buzzer_freq_hz = map_distance_to_buzzer_freq(distance_cm);
+
+    // SAFEなら必ず無音状態に戻す
     if (level == LEVEL_SAFE)
     {
-        noTone(BUZZER_PIN);
+        if (buzzer_state != BUZZER_SILENT)
+        {
+            noTone(BUZZER_PIN);
+            buzzer_state = BUZZER_SILENT;
+        }
         return;
     }
 
-    int duration_ms = map_distance_to_duration(distance_cm);
-    int tone_freq_hz = map_distance_to_buzzer_freq(distance_cm);
+    switch (buzzer_state)
+    {
+    case BUZZER_SILENT:
+        tone(BUZZER_PIN, buzzer_freq_hz);
+        buzzer_phase_started_ms = now;
+        buzzer_state = BUZZER_BEEP_ON;
+        break;
 
-    if (now - last_beep_ms >= (unsigned long)(duration_ms * 2))
-    {
-        last_beep_ms = now;
+    case BUZZER_BEEP_ON:
+        if (now - buzzer_phase_started_ms >= (unsigned long)buzzer_interval_ms)
+        {
+            noTone(BUZZER_PIN);
+            buzzer_phase_started_ms = now;
+            buzzer_state = BUZZER_BEEP_OFF;
+        }
+        break;
+
+    case BUZZER_BEEP_OFF:
+        if (now - buzzer_phase_started_ms >= (unsigned long)buzzer_interval_ms)
+        {
+            tone(BUZZER_PIN, buzzer_freq_hz);
+            buzzer_phase_started_ms = now;
+            buzzer_state = BUZZER_BEEP_ON;
+        }
+        break;
+
+    default:
         noTone(BUZZER_PIN);
-    }
-    else
-    {
-        tone(BUZZER_PIN, tone_freq_hz);
+        buzzer_state = BUZZER_SILENT;
+        break;
     }
 }
 
@@ -395,7 +437,11 @@ void setup()
     last_sensor_ms = 0;
     last_render_ms = 0;
     last_lcd_ms = 0;
-    last_beep_ms = 0;
+
+    buzzer_state = BUZZER_SILENT;
+    buzzer_phase_started_ms = 0;
+    buzzer_interval_ms = DURATION_MAX_MS;
+    buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
 
     Serial.print("echo_timeout_us=");
     Serial.println(get_echo_timeout_us());
