@@ -40,6 +40,12 @@ const uint16_t LCD_UPDATE_INTERVAL_MS = 200;
 const uint16_t BUZZER_FREQ_NEAR_HZ = 2200;
 const uint16_t BUZZER_FREQ_FAR_HZ = 800;
 
+// ブザーON/OFF比率
+const uint16_t BUZZER_DANGER_ON_MS = 180;
+const uint16_t BUZZER_DANGER_OFF_MS = 80;
+const uint16_t BUZZER_CAUTION_ON_MS = 80;
+const uint16_t BUZZER_CAUTION_OFF_MS = 220;
+
 // 状態空間
 const uint8_t STATE_COUNT = NEOPIXEL_NUM;
 
@@ -76,6 +82,7 @@ uint32_t color_from_level(DangerLevel level);
 void render_state(uint8_t state, int distance_cm);
 void update_buzzer(int distance_cm);
 void update_lcd(int distance_cm);
+void apply_buzzer_profile(DangerLevel level, int distance_cm);
 
 // ==============================
 // ライブラリオブジェクト
@@ -135,7 +142,8 @@ int filtered_distance_cm = DIST_MAX_CM;
 // ブザー状態機械
 BuzzerState buzzer_state = BUZZER_SILENT;
 unsigned long buzzer_phase_started_ms = 0;
-int buzzer_interval_ms = DURATION_MAX_MS;
+int buzzer_on_ms = BUZZER_CAUTION_ON_MS;
+int buzzer_off_ms = BUZZER_CAUTION_OFF_MS;
 int buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
 
 // ==============================
@@ -205,6 +213,28 @@ int map_distance_to_buzzer_freq(int distance_cm)
               (BUZZER_FREQ_FAR_HZ - BUZZER_FREQ_NEAR_HZ) * x;
 
     return (int)f;
+}
+
+void apply_buzzer_profile(DangerLevel level, int distance_cm)
+{
+    buzzer_freq_hz = map_distance_to_buzzer_freq(distance_cm);
+
+    switch (level)
+    {
+    case LEVEL_DANGER:
+        buzzer_on_ms = BUZZER_DANGER_ON_MS;
+        buzzer_off_ms = BUZZER_DANGER_OFF_MS;
+        break;
+    case LEVEL_CAUTION:
+        buzzer_on_ms = BUZZER_CAUTION_ON_MS;
+        buzzer_off_ms = BUZZER_CAUTION_OFF_MS;
+        break;
+    case LEVEL_SAFE:
+    default:
+        buzzer_on_ms = 0;
+        buzzer_off_ms = 0;
+        break;
+    }
 }
 
 // ==============================
@@ -322,11 +352,8 @@ void update_buzzer(int distance_cm)
     const DangerLevel level = get_danger_level(distance_cm);
     const unsigned long now = millis();
 
-    // 距離に応じたパラメータは常に更新
-    buzzer_interval_ms = map_distance_to_duration(distance_cm);
-    buzzer_freq_hz = map_distance_to_buzzer_freq(distance_cm);
+    apply_buzzer_profile(level, distance_cm);
 
-    // SAFEなら必ず無音状態に戻す
     if (level == LEVEL_SAFE)
     {
         if (buzzer_state != BUZZER_SILENT)
@@ -346,7 +373,7 @@ void update_buzzer(int distance_cm)
         break;
 
     case BUZZER_BEEP_ON:
-        if (now - buzzer_phase_started_ms >= (unsigned long)buzzer_interval_ms)
+        if (now - buzzer_phase_started_ms >= (unsigned long)buzzer_on_ms)
         {
             noTone(BUZZER_PIN);
             buzzer_phase_started_ms = now;
@@ -355,7 +382,7 @@ void update_buzzer(int distance_cm)
         break;
 
     case BUZZER_BEEP_OFF:
-        if (now - buzzer_phase_started_ms >= (unsigned long)buzzer_interval_ms)
+        if (now - buzzer_phase_started_ms >= (unsigned long)buzzer_off_ms)
         {
             tone(BUZZER_PIN, buzzer_freq_hz);
             buzzer_phase_started_ms = now;
@@ -440,7 +467,8 @@ void setup()
 
     buzzer_state = BUZZER_SILENT;
     buzzer_phase_started_ms = 0;
-    buzzer_interval_ms = DURATION_MAX_MS;
+    buzzer_on_ms = BUZZER_CAUTION_ON_MS;
+    buzzer_off_ms = BUZZER_CAUTION_OFF_MS;
     buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
 
     Serial.print("echo_timeout_us=");
