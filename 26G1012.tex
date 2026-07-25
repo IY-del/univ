@@ -6,8 +6,41 @@
 \usepackage[breaklinks=true, pdfborder={0 0 0}]{hyperref}
 \usepackage{xurl}
 \usepackage{luacode}
+
+%文献
 \usepackage[style=ieee,backend=biber]{biblatex}
 \addbibresource{refs.bib}
+\addbibresource{refs_temp.bib}
+\begin{luacode*}
+function has_cjk(s)  -- 漢字判定 キャストがめんどいのでintで返す
+  for _, c in utf8.codes(s) do
+    if (c >= 0x4E00 and c <= 0x9FFF) or (c >= 0x3400 and c <= 0x4DBF) or (c >= 0xF900 and c <= 0xFAFF) then
+      return 1
+    end
+  end
+  return 0
+end
+\end{luacode*}
+\DeclareNameFormat{default}{%
+  \nameparts{#1}
+  \ifnum\directlua{tex.sprint(has_cjk([[#1]]))}=1
+    {\namepartprefix\namepartfamily\namepartgiven\namepartsuffix}  % 一応prefix, suffix
+  \else  % biblatex.defのgiven-familyの定義通り
+    {\ifgiveninits
+    {\usebibmacro{name:given-family}
+      {\namepartfamily}
+      {\namepartgiveni}
+      {\namepartprefix}
+      {\namepartsuffix}}
+    {\usebibmacro{name:given-family}
+      {\namepartfamily}
+      {\namepartgiven}
+      {\namepartprefix}
+      {\namepartsuffix}}}
+  \fi
+  \usebibmacro{name:andothers}%
+}
+
 \usepackage[fleqn,tbtags]{mathtools}
 \usepackage{listings} % プログラム表示のためのパッケージ
 \lstset{
@@ -39,7 +72,7 @@
 具体的には，既存の車庫入れ支援システムや駐車警告システム\cite{gripon2026MicrocontrollerBasedCarParking}を参考にしつつ，単なる距離バー表示ではなく「距離に応じて LED パターンの進む速さが変わる」ことに重点を置いた構成にしている．
 距離変化に応じて表示テンポが変化する設計は，注意喚起を直感的に行ううえで有効であり，視覚と聴覚の両方で危険度を伝えることを狙っている\cite{toneRef,pulseInRef,hcsr04Ref}．
 
-Tinkercad で作成した本システムの共有リンクを以下に示す．
+Tinkercad で作成した本システムの共有リンクを以下に示す．\\
 \url{https://www.tinkercad.com/things/7TQ30WMwQnm-26g1012/editel?sharecode=MZAnpTt5TfT3vMYNU4AxtiqTfitiM_Kg8O0pw0faDh0}
 
 \section{システム構成}
