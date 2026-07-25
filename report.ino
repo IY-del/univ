@@ -1,6 +1,5 @@
 #include <Adafruit_NeoPixel.h>
 #include <LiquidCrystal_I2C.h>
-#include <stdio.h>
 
 // ==============================
 // 定数定義
