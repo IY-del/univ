@@ -57,6 +57,12 @@ enum DangerLevel : uint8_t
     LEVEL_CAUTION,
     LEVEL_DANGER
 };
+// 型定義エラー対策のプロトタイプ
+DangerLevel get_danger_level(int distance_cm);
+uint32_t color_from_level(DangerLevel level);
+void render_state(uint8_t state, int distance_cm);
+void update_buzzer(int distance_cm);
+void update_lcd(int distance_cm);
 
 // ==============================
 // ライブラリオブジェクト
