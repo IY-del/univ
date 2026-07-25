@@ -22,14 +22,13 @@ const uint8_t LCD_COLS = 16;
 const uint8_t LCD_ROWS = 2;
 
 // 距離閾値
-const uint16_t DIST_MIN_CM = 2.8;     // 最短扱い
+const uint16_t DIST_MIN_CM = 2;       // 最短扱い
 const uint16_t DIST_MAX_CM = 335;     // 最長扱い
 const uint16_t DIST_DANGER_CM = 50;   // 危険
 const uint16_t DIST_CAUTION_CM = 100; // 注意
 
 // HC-SR04計測制御
-const uint32_t SENSOR_INTERVAL_MS = 35;   // 約29ms以上を確保
-const uint32_t ECHO_TIMEOUT_US = 15000UL; // 200cm相当より少し余裕を持たせる
+const uint32_t SENSOR_INTERVAL_MS = 35; // 約29ms以上を確保
 
 // UI更新間隔
 const uint16_t DURATION_MIN_MS = 40;
@@ -57,6 +56,7 @@ enum DangerLevel : uint8_t
     LEVEL_CAUTION,
     LEVEL_DANGER
 };
+
 // 型定義エラー対策のプロトタイプ
 DangerLevel get_danger_level(int distance_cm);
 uint32_t color_from_level(DangerLevel level);
@@ -126,6 +126,15 @@ bool buzzer_on = false;
 // ヘルパ
 // ==============================
 
+uint32_t get_echo_timeout_us()
+{
+    // 距離cm -> 往復時間us
+    // time_us = distance_cm * 2 / 0.0343
+    // 少し余裕を持たせて +1000us
+    const float timeout_us = (2.0f * DIST_MAX_CM / 0.0343f) + 1000.0f;
+    return (uint32_t)timeout_us;
+}
+
 DangerLevel get_danger_level(int distance_cm)
 {
     if (distance_cm <= (int)DIST_DANGER_CM)
@@ -174,7 +183,9 @@ int measure_distance_cm_raw()
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
 
-    unsigned long duration = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
+    const uint32_t echo_timeout_us = get_echo_timeout_us();
+    unsigned long duration = pulseIn(ECHO_PIN, HIGH, echo_timeout_us);
+
     if (duration == 0)
     {
         return DIST_MAX_CM;
@@ -302,6 +313,7 @@ void update_lcd(int distance_cm)
     lcd.print("Dist:");
     lcd.print(distance_cm);
     lcd.print("cm");
+
     int used = 5 + String(distance_cm).length() + 2;
     for (int i = used; i < LCD_COLS; ++i)
     {
@@ -360,6 +372,9 @@ void setup()
     last_render_ms = 0;
     last_lcd_ms = 0;
     last_beep_toggle_ms = 0;
+
+    Serial.print("echo_timeout_us=");
+    Serial.println(get_echo_timeout_us());
 }
 
 // ==============================
