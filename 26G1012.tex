@@ -130,11 +130,13 @@ NeoPixel Ring はデータ線を 2 番ピンに接続し，5V と GND を共有�
 
 \subsection{超音波センサによる距離計測}
 
-HC-SR04 超音波距離センサは，TRIG ピンに 10µs 程度の HIGH パルスを与えることで超音波を発射し，その反射波を ECHO ピンで受信する．
-ECHO ピンに現れる HIGH パルスの長さは往復時間に比例し，これに音速を掛けて半分にすることで障害物までの距離を算出できる\cite{hcsr04Ref}．
+HC-SR04 超音波距離センサは，送信した超音波が障害物で反射して戻るまでの時間を計測することで距離を求めるセンサである．
+TRIG ピンに約 10µs の HIGH パルスを入力すると超音波が発射され，反射波を受信している間だけ ECHO ピンが HIGH となる\cite{hcsr04Ref}．
+この HIGH パルス幅は超音波の往復時間に対応するため，音速を用いて距離に換算できる\cite{hcsr04Ref}．
 
-本システムでは，Arduino 上で \lstinline|pulseIn(ECHO_PIN, HIGH, timeout)| を用いてパルス幅を計測し，\lstinline|duration * 0.0343 / 2.0| により距離 cm に変換している\cite{pulseInRef,hcsr04Ref}．
-測定に失敗した場合には最大距離を返すことで，安全側に倒した扱いとし，誤った近距離判定で過剰に警告しないようにしている\cite{pulseInRef}．
+本システムでは，Arduino の \lstinline|pulseIn(ECHO_PIN, HIGH, timeout)| を用いて ECHO パルス幅を計測し，\lstinline|duration * 0.0343 / 2.0| によって cm 単位の距離へ変換している\cite{pulseInRef,hcsr04Ref}．
+また，測定値が瞬間的に乱れることがあるため，単発の測定値をそのまま利用せず，中央値処理および指数移動平均により平滑化している．
+これにより，外れ値による表示の揺れや警告音の不安定化を抑えている．
 
 \subsection{距離に応じた内部処理の流れ}
 
