@@ -424,7 +424,7 @@ END
 - 高さ・幅を `PATTERN_DEFAULT_H`/`PATTERN_DEFAULT_W`（8×8）に設定．
 - `string`フィールドを `"X"` に設定．
 - スケール倍率を `PATTERN_SCALE_NORMAL`（1倍）に設定．
-- 回転方向を `ROTATE_0` に設定．
+- 回転方向を `ROTATE_90` に設定．
 
 また，`new_pattern_view_doublescale`については，
 `new_pattern_view(count, pattern)`で初期化した後，
