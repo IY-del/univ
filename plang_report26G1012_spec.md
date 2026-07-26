@@ -156,7 +156,7 @@ $ LD_LIBRARY_PATH=. ./a.out
 - `filename`を読み取り専用で開く．
 - ファイルから1文字ずつ読み込み，'0'または'1'であれば内部バッファに格納する．
 - バッファ長`len`に対して，`cell = h * w`要素ごとに1文字分のパターンとみなし，
-  - `n = (len + cell - 1) / cell`個分のパターンを`calloc`で確保する．
+   - `n = (len + cell - 1) / cell`個分のパターンを`calloc`で確保する．
 - 1次元配列`arr`に，`arr[i] = buf[i]`としてそのまま詰める（row-major配置）．
 - `out`と`out_n`に確保した配列のポインタと文字数を返す．
 
@@ -316,11 +316,11 @@ $ LD_LIBRARY_PATH=. ./a.out
 処理の流れ：
 
 - 回転が0度・180度の場合：
-  - `width = view->w * view->scale_w`
-  - `height = view->h * view->scale_h`
+   - `width = view->w * view->scale_w`
+   - `height = view->h * view->scale_h`
 - 回転が90度・270度の場合：
-  - `width = view->h * view->scale_w`
-  - `height = view->w * view->scale_h`
+   - `width = view->h * view->scale_w`
+   - `height = view->w * view->scale_h`
 
 | パラメータ名 | 型                   | 意味                     |
 | ------------ | -------------------- | ------------------------ |
@@ -429,15 +429,15 @@ PatternStep step;
 処理の流れ（概要）：
 
 - `x >= out_w`の場合：
-  - `x = 0`にリセットし，`y++`して改行イベント`PATTERN_EVENT_NEWLINE`を返す．
-  - `y >= out_h`の場合：
-    - `y = 0`にリセットし，次の文字インデックス`ch++`へ進める．
-  - `ch >= view->count`に達すると，`PATTERN_EVENT_END`を返す．
+   - `x = 0`にリセットし，`y++`して改行イベント`PATTERN_EVENT_NEWLINE`を返す．
+   - `y >= out_h`の場合：
+      -  `y = 0`にリセットし，次の文字インデックス`ch++`へ進める．
+   - `ch >= view->count`に達すると，`PATTERN_EVENT_END`を返す．
 - それ以外の場合：
-  - `resolve_coord(view, x, y)`で元座標`src`を求める．
-  - `step->ch`に文字インデックス，`step->src_x/src_y`に座標を設定し，
-    - `step->kind = PATTERN_EVENT_CELL` としてセルイベントを返す．
-  - `x++`して次のセルへ進む．
+   - `resolve_coord(view, x, y)`で元座標`src`を求める．
+   - `step->ch`に文字インデックス，`step->src_x/src_y`に座標を設定し，
+      -  `step->kind = PATTERN_EVENT_CELL` としてセルイベントを返す．
+   - `x++`して次のセルへ進む．
 
 | パラメータ名 | 型                 | 意味                 |
 | ------------ | ------------------ | -------------------- |
@@ -561,7 +561,7 @@ print_as_pattern(&view);
 横・縦のスケール倍率を2倍に変更した`PatternView`を返す関数である．
 
 - `new_pattern_view(count, pattern)`で初期化した後，
-  - `scale_w`と`scale_h`を`PATTERN_SCALE_DOUBLE`（2倍）に変更する．
+   - `scale_w`と`scale_h`を`PATTERN_SCALE_DOUBLE`（2倍）に変更する．
 
 | パラメータ名 | 型      | 意味                       |
 | ------------ | ------- | -------------------------- |
@@ -587,16 +587,16 @@ print_as_pattern(&view2x);
 処理の流れ：
 
 - `int (*pattern)[view->h][view->w] = view->pattern;`として，
-  - `pattern[ch][y][x]`で各セルにアクセス可能な形にキャストする．
+   - `pattern[ch][y][x]`で各セルにアクセス可能な形にキャストする．
 - `PatternIterator it = new_iter(view);`でイテレータを初期化．
 - `PatternStep step;`を用意し，`while (pattern_iterator_next(&it, &step))`で走査．
-  - `PATTERN_EVENT_CELL`の場合：
-    - `printxs(pattern[step.ch][step.src_y][step.src_x], view->string);`を呼び出し，
-      - セル値（0/1）に応じて，`view->string`またはスペースを表示する．
-  - `PATTERN_EVENT_NEWLINE`の場合：
-    - 改行文字を出力する．
-  - `PATTERN_EVENT_END`の場合：
-    - ループ終了．
+   - `PATTERN_EVENT_CELL`の場合：
+      -  `printxs(pattern[step.ch][step.src_y][step.src_x], view->string);`を呼び出し，
+        -  セル値（0/1）に応じて，`view->string`またはスペースを表示する．
+   - `PATTERN_EVENT_NEWLINE`の場合：
+      -  改行文字を出力する．
+   - `PATTERN_EVENT_END`の場合：
+      -  ループ終了．
 - 最後に改行を1つ追加する．
 
 | パラメータ名 | 型                   | 意味                     |
