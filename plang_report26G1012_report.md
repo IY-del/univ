@@ -126,7 +126,7 @@ n = 26
 仕様書では，次の使用例が示されている．
 
 ```c
-free_memory(patterns);  /* int (*)[8][8] でもキャスト不要 */ */
+free_memory(patterns);  /* int (*)[8][8] でもキャスト不要 */
 free_memory(flat);      /* int * でも同様に呼べる */
 ```
 
