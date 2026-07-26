@@ -22,7 +22,7 @@ const uint16_t DIST_MAX_CM = 335;
 const uint16_t DIST_DANGER_CM = 50;
 const uint16_t DIST_CAUTION_CM = 100;
 // HC-SR04計測制御
-const float sonic = 0.0343f;
+const float sonic = 0.0343f; // 温度変化を扱う拡張もある
 const uint32_t SENSOR_INTERVAL_MS = 60;
 const uint32_t ECHO_TIMEOUT_US = (2.0f * DIST_MAX_CM / sonic) + 1000.0f;
 // 測距安定化
