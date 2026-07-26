@@ -259,7 +259,7 @@ free_memory(flat);      /* int * でも同様に呼べる */
 `get_coord`は，`PatternView`構造体に基づいて，出力上の座標から
 元のパターン上の座標への変換を行うライブラリである．
 回転指定（0,90,180,270度）とスケール倍率（拡大率）を考慮した座標変換を提供し，
-パターン走査処理から利用される．
+あわせて，表示時の出力サイズ（幅・高さ）をまとめて返す機能を提供する．
 
 ## コンパイル方法
 
@@ -280,53 +280,49 @@ $ gcc foo.c -L. -lcoord
 $ LD_LIBRARY_PATH=. ./a.out
 ```
 
+## データ構造
+
+### PatternCoord
+
+パターン上の座標を表す構造体である．
+`x`と`y`の2つのメンバを持ち，`resolve_coord`の戻り値として利用される．[cite:13]
+
+メンバ名 | 型 | 意味
+-|-|-
+x | size_t | パターン上のX座標
+y | size_t | パターン上のY座標
+
+### PatternSize
+
+スケール適用後の出力サイズを表す構造体である．
+`width`と`height`をまとめて保持し，`pattern_scaled_size`の戻り値として利用される．[cite:13]
+
+メンバ名 | 型 | 意味
+-|-|-
+width | size_t | 出力幅
+height | size_t | 出力高さ
 
 ## 関数一覧
 
 関数名 | 説明
 -|-
-pattern_output_width | 回転後の論理的なパターン幅を返す
-pattern_output_height | 回転後の論理的なパターン高さを返す
-pattern_scaled_width | スケール適用後の出力幅を返す
-pattern_scaled_height | スケール適用後の出力高さを返す
+pattern_scaled_size | スケール適用後の出力幅・高さをまとめて返す
 resolve_coord | 出力座標から元のパターン座標を求める
 
 ※`rotate_coord`は`static`な内部関数であり，仕様書では補助関数として扱う．
 
-## pattern_output_width / pattern_output_height
+## pattern_scaled_size
 
-`PatternView`の回転指定に応じて，表示時の論理的な幅・高さを返す関数である．
+`PatternView`の回転指定とスケール倍率に応じて，
+実際の出力幅・高さを`PatternSize`構造体としてまとめて返す関数である．
 
-- 幅:
-  - 回転が0度・180度の場合 → `view->w`
-  - 90度・270度の場合 → `view->h`
-- 高さ:
-  - 回転が0度・180度の場合 → `view->h`
-  - 90度・270度の場合 → `view->w`
-
-パラメータ名 | 型 | 意味
--|-|-
-view | const PatternView * | 対象となるパターンビュー
-
-戻り値 | 型 | 意味
--|-|-
-戻り値 | size_t | 回転後の幅/高さ
-
-### 使用例
-
-```c
-size_t out_w = pattern_output_width(&view);
-size_t out_h = pattern_output_height(&view);
-```
-
-
-
-## pattern_scaled_width / pattern_scaled_height
-
-`pattern_output_width/height`にスケール倍率を掛け合わせた「出力上の」幅・高さを返す関数である．
-
-- 幅: `pattern_output_width(view) * view->scale_w`
-- 高さ: `pattern_output_height(view) * view->scale_h`
+処理の流れ：
+- 回転が0度・180度の場合：
+  - `width = view->w * view->scale_w`
+  - `height = view->h * view->scale_h`
+- 回転が90度・270度の場合：
+  - `width = view->h * view->scale_w`
+  - `height = view->w * view->scale_h`
 
 パラメータ名 | 型 | 意味
 -|-|-
@@ -334,16 +330,15 @@ view | const PatternView * | 対象となるパターンビュー
 
 戻り値 | 型 | 意味
 -|-|-
-戻り値 | size_t | スケール適用後の幅/高さ
+戻り値 | PatternSize | スケール適用後の出力幅・高さ
 
 ### 使用例
 
 ```c
-size_t out_w = pattern_scaled_width(&view);
-size_t out_h = pattern_scaled_height(&view);
+PatternSize size = pattern_scaled_size(&view);
+size_t out_w = size.width;
+size_t out_h = size.height;
 ```
-
-
 
 ## resolve_coord
 
@@ -371,9 +366,6 @@ out_y | size_t | 出力上のY座標
 PatternCoord src = resolve_coord(&view, out_x, out_y);
 /* src.x, src.y を使ってパターン配列にアクセスする */
 ```
-
-
-
 # iterator
 
 ## 概要
