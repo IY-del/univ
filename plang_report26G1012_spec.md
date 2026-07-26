@@ -285,7 +285,7 @@ $ LD_LIBRARY_PATH=. ./a.out
 ### PatternCoord
 
 パターン上の座標を表す構造体である．
-`x`と`y`の2つのメンバを持ち，`resolve_coord`の戻り値として利用される．[cite:13]
+`x`と`y`の2つのメンバを持ち，`resolve_coord`の戻り値として利用される．
 
 メンバ名 | 型 | 意味
 -|-|-
@@ -295,7 +295,7 @@ y | size_t | パターン上のY座標
 ### PatternSize
 
 スケール適用後の出力サイズを表す構造体である．
-`width`と`height`をまとめて保持し，`pattern_scaled_size`の戻り値として利用される．[cite:13]
+`width`と`height`をまとめて保持し，`pattern_scaled_size`の戻り値として利用される．
 
 メンバ名 | 型 | 意味
 -|-|-
@@ -640,11 +640,11 @@ print_as_pattern(&view);
 
 フォントデータファイル`font_data01.txt`から 0/1 のビット列を読み込み，
 `get_pattern`ライブラリで 8×8 のフォントパターン配列を生成し，
-`print_pattern`ライブラリでこれらのパターンを大きな文字として表示するエントリポイント関数である．[1][2][3]
+`print_pattern`ライブラリでこれらのパターンを大きな文字として表示するエントリポイント関数である．
 
 ## コンパイル方法
 
-ソースコードが`main.c`の場合，以下のようにコンパイルする．[1]
+ソースコードが`main.c`の場合，以下のようにコンパイルする．
 
 ```sh
 clang main.c get_pattern.c print_pattern.c get_coord.c iterator.c fontlib.c -o main
