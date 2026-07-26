@@ -22,12 +22,12 @@ const uint16_t DIST_MAX_CM = 335;
 const uint16_t DIST_DANGER_CM = 50;
 const uint16_t DIST_CAUTION_CM = 100;
 // HC-SR04計測制御
-const float sonic = 0.0343f; // 温度変化を扱う拡張もある
+const float sonic = 0.0343f; // 拡張: 温度補正
 const uint32_t SENSOR_INTERVAL_MS = 60;
-const uint32_t ECHO_TIMEOUT_US = (2.0f * DIST_MAX_CM / sonic) + 1000.0f;
+const uint32_t ECHO_TIMEOUT_US = (uint32_t)((2.0f * DIST_MAX_CM / sonic) + 1000.0f);
 // 測距安定化
 const uint8_t DIST_BUFFER_SIZE = 3;
-const float EMA_WEIGHT = 0.4; // [0, 1]
+const float EMA_WEIGHT = 0.4f; // [0, 1]
 
 // NeoPixel ring
 const uint8_t NEOPIXEL_PIN = 2;
@@ -82,7 +82,7 @@ enum StateLogic : uint8_t
     STATE_LOGIC_LFSR,
     STATE_LOGIC_MOD
 };
-const StateLogic state_logic_num = STATE_LOGIC_MOD;
+const StateLogic state_logic_num = STATE_LOGIC_MOD; // 拡張: 外部入力
 
 // ==============================
 // 型定義エラー対策のプロトタイプ
