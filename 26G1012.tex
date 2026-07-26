@@ -719,220 +719,184 @@ void loop()
 \subsection{関数の詳細}
 
 本節では，ソースコード\ref{src:whole_program}に示したプログラム内の主な関数について，
-概要，引数と戻り値，内部処理を説明する．
+概要，引数と戻り値，内部処理，およびシステム内での役割を説明する．
 行番号はソースコード\ref{src:whole_program}中の行番号を表す．
 
 \subsubsection{get\_danger\_level関数}
 
-\lstinline|get_danger_level(int distance_cm)| は，距離に応じて危険度レベル
-\lstinline|LEVEL_SAFE|，\lstinline|LEVEL_CAUTION|，\lstinline|LEVEL_DANGER|
-のいずれかを返す関数である．
-引数 \lstinline|distance_cm| は cm 単位の距離であり，戻り値は危険度を表す
-\lstinline|DangerLevel| 型の値である．
-ソースコード\ref{src:whole_program}の165〜173行目では，距離が
-\lstinline|DIST_DANGER_CM| 以下の場合に \lstinline|LEVEL_DANGER|，
-\lstinline|DIST_CAUTION_CM| 以下の場合に \lstinline|LEVEL_CAUTION| を返し，
-それより遠い場合は \lstinline|LEVEL_SAFE| を返すことで，
-LED の色やブザーのパターン，LCD 表示の共通の基準として利用している．
+\lstinline|get_danger_level(int distance_cm)| は，距離に応じて危険度レベルを三段階に分類する関数である．
+引数 \lstinline|distance_cm| は cm 単位の距離値であり，戻り値は危険度を表す \lstinline|DangerLevel| 型の値である．
+
+ソースコード\ref{src:whole_program}の165〜173行目では，距離が \lstinline|DIST_DANGER_CM| 以下の場合に \lstinline|LEVEL_DANGER| を，
+\lstinline|DIST_CAUTION_CM| 以下の場合に \lstinline|LEVEL_CAUTION| を返し，それより遠い場合には \lstinline|LEVEL_SAFE| を返す．
+この関数は，NeoPixel の色，ブザーの動作モード，LCD のラベル表示を共通の基準で制御するための基礎となっている．
 
 \subsubsection{clamp\_distance\_cm関数}
 
-\lstinline|clamp_distance_cm(int distance_cm)| は，距離値が想定範囲を外れた場合に，
-\lstinline|DIST_MIN_CM| 以上 \lstinline|DIST_MAX_CM| 以下に丸める関数である．
-引数と戻り値はいずれも cm 単位の整数値である．
-ソースコード\ref{src:whole_program}の178〜186行目では，極端に小さい値や大きい値を
-そのまま後段の処理に渡さないようにしており，NeoPixel の速度マッピングや
-ブザー周波数の計算が破綻しないようにしている．
+\lstinline|clamp_distance_cm(int distance_cm)| は，距離値が想定範囲を外れた場合に \lstinline|DIST_MIN_CM| 以上 \lstinline|DIST_MAX_CM| 以下に丸める関数である．
+引数および戻り値はいずれも cm 単位の整数値である．
+
+ソースコード\ref{src:whole_program}の178〜186行目では，入力値が \lstinline|DIST_MIN_CM| 未満であれば最小値に，
+\lstinline|DIST_MAX_CM| を超える場合は最大値に置き換え，範囲内の値はそのまま返す実装となっている．
+これにより，異常な測距結果が後段の速度マッピングやブザー周波数計算に影響することを防いでいる．
 
 \subsubsection{lcd\_print\_padded関数}
 
-\lstinline|lcd_print_padded(const char *text)| は，LCD の 1 行分に文字列を表示し，
-残りの桁をスペースで埋める補助関数である．
-引数 \lstinline|text| は表示したい文字列であり，戻り値はない．
-ソースコード\ref{src:whole_program}の191〜196行目では，まず
-\lstinline|lcd.print(text)| で文字列を出力し，その長さを \lstinline|strlen| で取得する．
-続いて，\lstinline|LCD_COLS| までの残りの桁数だけ空白文字を出力することで，
-前回表示した文字列が行末に残らないようにしている．
+\lstinline|lcd_print_padded(const char *text)| は，LCD の 1 行分に文字列を表示し，残りの桁をスペースで埋める補助関数である．
+引数 \lstinline|text| は表示したい文字列であり，戻り値は持たない．
+
+ソースコード\ref{src:whole_program}の191〜196行目では，まず \lstinline|lcd.print(text)| で文字列を出力し，
+\lstinline|strlen| により文字列長を求めている．続いて，\lstinline|LCD_COLS| までの残りの桁数だけ空白文字を出力し，
+前回表示した内容が行末に残らないようにしている．この処理により，LCD 表示の見やすさを保っている．
 
 \subsubsection{median\_distance\_cm関数}
 
 \lstinline|median_distance_cm(int a, int b, int c)| は，3 つの整数値の中央値を求める関数である．
-引数 \lstinline|a|, \lstinline|b|, \lstinline|c| は cm 単位の距離値であり，戻り値として
-それらの中央値を返す．
-ソースコード\ref{src:whole_program}の201〜219行目では，比較と入れ替えを数回行うことで
-簡単なソートを実現し，中間の値を返す実装になっている．
-これにより，超音波センサの一時的な外れ値の影響を減らし，
-より安定した距離値を得られるようにしている．
+引数 \lstinline|a|, \lstinline|b|, \lstinline|c| は cm 単位の距離値であり，戻り値としてそれらの中央値を返す．
+
+ソースコード\ref{src:whole_program}の201〜219行目では，比較と交換を数回行うことで簡易的なソートを実現し，中間の値を選び出している．
+この関数は超音波センサの一時的な外れ値を抑える目的で用いられており，複数サンプルの中央値を距離値として採用することで，測距結果の安定化に貢献している．
 
 \subsubsection{push\_distance\_sample関数}
 
-\lstinline|push_distance_sample(int raw_cm)| は，新たに取得した距離サンプルを
-固定長バッファ \lstinline|dist_buffer| に追加する関数である．
-引数 \lstinline|raw_cm| は生の距離値であり，戻り値はない．
-ソースコード\ref{src:whole_program}の224〜230行目では，
-現在のインデックス位置に値を書き込んだ後，インデックスを循環させている．
-また，バッファがまだすべて埋まっていない場合には，
-\lstinline|dist_buffer_filled| をインクリメントしてサンプル数を記録している．
+\lstinline|push_distance_sample(int raw_cm)| は，新たに取得した距離サンプルを固定長バッファに追加する関数である．
+引数 \lstinline|raw_cm| は生の距離値であり，戻り値は持たない．
+
+ソースコード\ref{src:whole_program}の224〜230行目では，現在のインデックス位置に値を書き込んだあと，インデックスを循環させている．
+また，バッファがまだ完全には埋まっていない場合には，\lstinline|dist_buffer_filled| をインクリメントして現在のサンプル数を記録している．
+この関数は，直近の測距結果を一定数保持し，中央値処理に用いるための準備を行う役割を持つ．
 
 \subsubsection{map\_distance\_to\_buzzer\_freq関数}
 
-\lstinline|map_distance_to_buzzer_freq(int distance_cm)| は，
-距離をブザーの周波数に線形マッピングする関数である．
-引数 \lstinline|distance_cm| は距離値であり，
-戻り値は Hz 単位の周波数を表す整数値である．
-ソースコード\ref{src:whole_program}の235〜250行目では，
-\lstinline|UI_MIN_CM| と \lstinline|UI_MAX_CM| の範囲外では
-それぞれ近距離用・遠距離用の周波数を直接返し，
-その範囲内では 0〜1 の正規化変数 \lstinline|x| を用いて
-\lstinline|BUZZER_FREQ_NEAR_HZ| から \lstinline|BUZZER_FREQ_FAR_HZ| までを
-線形補間している．これにより，距離が近いほど高い音，遠いほど低い音になるように
-危険度を音の高さでも表現している．
+\lstinline|map_distance_to_buzzer_freq(int distance_cm)| は，距離値をブザーの周波数に線形マッピングする関数である．
+引数 \lstinline|distance_cm| は cm 単位の距離値であり，戻り値は Hz 単位の周波数を表す整数値である．
+
+ソースコード\ref{src:whole_program}の235〜250行目では，距離が \lstinline|UI_MIN_CM| 以下の場合に近距離用周波数 \lstinline|BUZZER_FREQ_NEAR_HZ| を，
+\lstinline|UI_MAX_CM| 以上の場合に遠距離用周波数 \lstinline|BUZZER_FREQ_FAR_HZ| を返す．
+その中間の範囲では，距離を 0〜1 の区間に正規化した変数 \lstinline|x| を用い，
+\lstinline|BUZZER_FREQ_NEAR_HZ| から \lstinline|BUZZER_FREQ_FAR_HZ| までを線形補間している．
+これにより，距離が近いほど高い音，遠いほど低い音となるように危険度を音の高さでも表現している．
 
 \subsubsection{apply\_buzzer\_profile関数}
 
-\lstinline|apply_buzzer_profile(DangerLevel level, int distance_cm)| は，
-危険度レベルと距離に応じてブザーの周波数と ON/OFF 時間を設定する関数である．
-引数 \lstinline|level| は危険度，\lstinline|distance_cm| は距離値であり，
-戻り値はない．
-ソースコード\ref{src:whole_program}の255〜272行目では，
-まず \lstinline|map_distance_to_buzzer_freq()| により
-\lstinline|buzzer_freq_hz| を決定し，続いて危険度レベルに応じて
-\lstinline|buzzer_on_ms| と \lstinline|buzzer_off_ms| に
-それぞれ DANGER 用，CAUTION 用，もしくは無音となる SAFE 用の値を設定している．
+\lstinline|apply_buzzer_profile(DangerLevel level, int distance_cm)| は，危険度レベルと距離に応じてブザーの周波数と ON/OFF 時間を設定する関数である．
+引数 \lstinline|level| は危険度，\lstinline|distance_cm| は距離値であり，戻り値は持たない．
+
+ソースコード\ref{src:whole_program}の255〜272行目では，まず \lstinline|map_distance_to_buzzer_freq()| を用いて
+\lstinline|buzzer_freq_hz| を決定している．
+続いて危険度レベルに応じて，\lstinline|LEVEL_DANGER| の場合には \lstinline|BUZZER_DANGER_ON_MS| と \lstinline|BUZZER_DANGER_OFF_MS| を，
+\lstinline|LEVEL_CAUTION| の場合には \lstinline|BUZZER_CAUTION_ON_MS| と \lstinline|BUZZER_CAUTION_OFF_MS| を設定している．
+SAFE の場合には ON/OFF 時間を 0 に設定し，後続処理で無音となるようにしている．
 
 \subsubsection{measure\_distance\_cm\_raw関数}
 
-\lstinline|measure_distance_cm_raw()| は，HC-SR04 を用いて
-生の距離値を 1 回測定する関数である．
+\lstinline|measure_distance_cm_raw()| は，HC-SR04 による距離測定を 1 回実行する関数である．
 引数は持たず，戻り値として距離値（cm）を整数で返す．
-ソースコード\ref{src:whole_program}の281〜294行目では，
-まず TRIG ピンを LOW→HIGH→LOW と短時間切り替えることで超音波パルスを発射し，
-その後 \lstinline|pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US)| を用いて
-ECHO ピンの HIGH パルス幅をマイクロ秒単位で計測している．
-タイムアウトした場合（\lstinline|duration == 0|）には最大距離
-\lstinline|DIST_MAX_CM| を返し，それ以外の場合には
-\lstinline|duration * sonic / 2.0f| によって往復時間から距離に変換した後，
+
+ソースコード\ref{src:whole_program}の281〜294行目では，TRIG ピンを LOW→HIGH→LOW と短時間切り替えて超音波パルスを発射し，
+その後 \lstinline|pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US)| を用いて ECHO ピンの HIGH パルス幅をマイクロ秒単位で計測している．
+タイムアウトした場合（\lstinline|duration == 0|）には最大距離 \lstinline|DIST_MAX_CM| を返し，
+それ以外の場合には \lstinline|duration * sonic / 2.0f| により往復時間から距離に変換したのち，
 \lstinline|clamp_distance_cm()| を通して範囲内の値に丸めている．
 
 \subsubsection{read\_distance\_cm関数}
 
 \lstinline|read_distance_cm()| は，複数サンプルを用いて中央値処理を行った距離値を返す関数である．
 引数は持たず，戻り値は cm 単位の整数値である．
-ソースコード\ref{src:whole_program}の299〜307行目では，
-まず \lstinline|measure_distance_cm_raw()| を呼び出して生の距離値を取得し，
-\lstinline|push_distance_sample()| によって測距バッファに保存している．
-バッファがまだ完全に埋まっていない場合は生の値をそのまま返し，
-バッファが埋まっている場合には \lstinline|median_distance_cm()| を用いて
-3 つのサンプルの中央値を求めて返すことで，瞬間的なノイズの影響を低減している．
+
+ソースコード\ref{src:whole_program}の299〜307行目では，まず \lstinline|measure_distance_cm_raw()| を呼び出して生の距離値を取得し，
+\lstinline|push_distance_sample()| により測距バッファに保存している．
+バッファがまだ完全に埋まっていない場合には生の値をそのまま返し，バッファが埋まっている場合には
+\lstinline|median_distance_cm()| を用いて 3 つのサンプルの中央値を求めて返している．
+これにより，単一の外れ値に引きずられない距離値を利用できる．
 
 \subsubsection{smooth\_distance\_cm関数}
 
-\lstinline|smooth_distance_cm(int prev_cm, int new_cm)| は，
-直前の距離値と新しい距離値から，指数移動平均により平滑化した距離値を求める関数である．
+\lstinline|smooth_distance_cm(int prev_cm, int new_cm)| は，直前の距離値と新しい距離値から，指数移動平均により平滑化した距離値を求める関数である．
 引数 \lstinline|prev_cm| は前回の平滑化済み距離，\lstinline|new_cm| は新たに取得した距離値であり，
 戻り値は平滑化後の距離値である．
-ソースコード\ref{src:whole_program}の313行目では，
-\lstinline|EMA_WEIGHT * new_cm + (1 - EMA_WEIGHT) * prev_cm| という式により，
+
+ソースコード\ref{src:whole_program}の313行目では，\lstinline|EMA_WEIGHT * new_cm + (1 - EMA_WEIGHT) * prev_cm| という式を用いて，
 新しい値を \lstinline|EMA_WEIGHT|，過去の値を \lstinline|1 - EMA_WEIGHT| の重みで合成している．
-これにより，距離表示やブザーの動作が滑らかになり，センサのばらつきによるちらつきを抑えている．
+この関数により，NeoPixel の回転速度やブザーの周期が滑らかに変化し，測距ノイズによるちらつきを抑えている．
 
 \subsubsection{map\_distance\_to\_duration関数}
 
-\lstinline|map_distance_to_duration(int distance_cm)| は，
-距離値を NeoPixel の状態更新周期（ms）に変換する関数である．
+\lstinline|map_distance_to_duration(int distance_cm)| は，距離値を NeoPixel の状態更新周期（ms）に変換する関数である．
 引数 \lstinline|distance_cm| は距離値であり，戻り値はミリ秒単位の整数値である．
-ソースコード\ref{src:whole_program}の322~339行目では，
-距離が \lstinline|UI_MIN_CM| 以下の場合に最小周期
-\lstinline|DURATION_MIN_MS|，\lstinline|UI_MAX_CM| 以上の場合に最大周期
-\lstinline|DURATION_MAX_MS| を返す．
-その中間では 0〜1 に正規化した距離 \lstinline|x| から
-\lstinline|t = x * x| とすることで近距離側で変化が急になる二乗カーブを作り，
-\lstinline|DURATION_MIN_MS| から \lstinline|DURATION_MAX_MS| への間を補間している．
-これにより，障害物に近づくほど NeoPixel の回転速度が急激に速くなる印象を与えられる．
+
+ソースコード\ref{src:whole_program}の322〜339行目では，距離が \lstinline|UI_MIN_CM| 以下の場合に最小周期 \lstinline|DURATION_MIN_MS| を，
+\lstinline|UI_MAX_CM| 以上の場合に最大周期 \lstinline|DURATION_MAX_MS| を返す．
+その中間の範囲では距離を 0〜1 に正規化した値 \lstinline|x| を用い，\lstinline|t = x * x| により二乗カーブを構成している．
+この \lstinline|t| を用いて \lstinline|DURATION_MIN_MS| から \lstinline|DURATION_MAX_MS| の間を補間することで，
+近距離側で変化が急になる更新周期を実現している．
+その結果，障害物に近づくほど NeoPixel の回転速度が急激に速くなる印象を与えられる．
 
 \subsubsection{color\_from\_level関数}
 
-\lstinline|color_from_level(DangerLevel level)| は，
-危険度レベルに応じた NeoPixel の基本色を返す関数である．
-引数 \lstinline|level| は危険度を表し，戻り値は
-\lstinline|Adafruit_NeoPixel| で用いる 32 ビットの色値である．
-ソースコード\ref{src:whole_program}の348〜349行目では，
-\lstinline|LEVEL_COLORS| 配列から RGB 各成分を取り出し，
-\lstinline|ring.Color()| を用いて NeoPixel 用の色に変換している．
-SAFE で緑，CAUTION で黄，DANGER で赤という直感的な色分けを行っている．
+\lstinline|color_from_level(DangerLevel level)| は，危険度レベルに応じた NeoPixel の基本色を返す関数である．
+引数 \lstinline|level| は危険度を表し，戻り値は \lstinline|Adafruit_NeoPixel| で用いる 32 ビットの色値である．
+
+ソースコード\ref{src:whole_program}の348〜349行目では，\lstinline|LEVEL_COLORS| 配列から対応する RGB 各成分を取得し，
+\lstinline|ring.Color()| を用いて NeoPixel 用の色値に変換している．
+SAFE では緑，CAUTION では黄，DANGER では赤となるように値を設定しており，直感的な色分けを行っている．
 
 \subsubsection{render\_state関数}
 
-\lstinline|render_state(uint8_t state, int distance_cm)| は，
-現在の状態番号と距離から NeoPixel リング上の表示パターンを描画する関数である．
-引数 \lstinline|state| は 0〜\lstinline|NEOPIXEL_NUM - 1| の状態番号，
-\lstinline|distance_cm| は距離値であり，戻り値はない．
-ソースコード\ref{src:whole_program}の354〜379行目では，
-まずリングを \lstinline|clear()| で消灯した後，
-\lstinline|get_danger_level()| と \lstinline|color_from_level()| により
-危険度に応じた基本色を求めている．
-続いて，状態番号に対応するインデックスを中心として前後の LED に明度の異なる
-トレイル色を設定し，最後に \lstinline|show()| を呼び出して表示を更新する．
-これにより，1 点ランナーとその前後の残像によって回転しているような視覚効果を実現している．
+\lstinline|render_state(uint8_t state, int distance_cm)| は，現在の状態番号と距離から NeoPixel リング上の表示パターンを描画する関数である．
+引数 \lstinline|state| は 0〜\lstinline|NEOPIXEL_NUM - 1| の状態番号，\lstinline|distance_cm| は距離値であり，戻り値は持たない．
+
+ソースコード\ref{src:whole_program}の354〜379行目では，まず \lstinline|ring.clear()| によりリングを消灯し，
+\lstinline|get_danger_level()| と \lstinline|color_from_level()| により危険度に応じた基本色を求めている．
+続いて，状態番号から現在位置のインデックスを算出し，その LED を基本色で点灯させる．
+さらにその前後の LED に対して明度の異なるトレイル色を設定し，最後に \lstinline|ring.show()| を呼び出して表示を更新している．
+これにより，1 点ランナーとその残像による回転パターンを実現している．
 
 \subsubsection{update\_buzzer関数}
 
-\lstinline|update_buzzer(int distance_cm)| は，
-距離に応じてブザーの状態機械を更新する関数である．
-引数 \lstinline|distance_cm| は距離値であり，戻り値はない．
-ソースコード\ref{src:whole_program}の388〜433行目では，
-まず現在の距離から危険度を求め，\lstinline|apply_buzzer_profile()| により
-周波数と ON/OFF 時間を設定する．
-\lstinline|LEVEL_SAFE| の場合には，ブザーが鳴っていれば \lstinline|noTone()| で停止し，
-\lstinline|BUZZER_SILENT| 状態に戻して処理を終了する．
-それ以外の場合には，現在の状態 \lstinline|buzzer_state| に応じて
-\lstinline|tone()| と \lstinline|noTone()| を切り替え，
-経過時間が ON/OFF 時間を超えたタイミングで次の状態へ遷移させることで，
-ブロッキングせずに周期的なビープ音を生成している．
+\lstinline|update_buzzer(int distance_cm)| は，距離に応じてブザーの状態機械を更新する関数である．
+引数 \lstinline|distance_cm| は距離値であり，戻り値は持たない．
+
+ソースコード\ref{src:whole_program}の388〜433行目では，まず現在の距離から危険度を求め，
+\lstinline|apply_buzzer_profile()| によりブザーの周波数と ON/OFF 時間を設定している．
+危険度が SAFE の場合には，ブザーが鳴っているときに \lstinline|noTone()| を呼び出して無音状態に戻し，
+状態を \lstinline|BUZZER_SILENT| にリセットする．
+CAUTION および DANGER の場合には，現在の \lstinline|buzzer_state| に応じて \lstinline|tone()| と \lstinline|noTone()| を切り替え，
+経過時間が ON/OFF 時間を超えたタイミングで次の状態へ遷移させることで，ブロッキングせずに周期的なビープ音を生成している．
 
 \subsubsection{update\_lcd関数}
 
-\lstinline|update_lcd(int distance_cm)| は，
-距離と危険度を LCD に表示する関数である．
-引数 \lstinline|distance_cm| は距離値であり，戻り値はない．
-ソースコード\ref{src:whole_program}の442〜450行目では，
-\lstinline|snprintf| を用いて 1 行目に \lstinline|"Dist:%3dcm"| 形式の距離文字列を，
+\lstinline|update_lcd(int distance_cm)| は，距離と危険度を LCD に表示する関数である．
+引数 \lstinline|distance_cm| は距離値であり，戻り値は持たない．
+
+ソースコード\ref{src:whole_program}の442〜450行目では，\lstinline|snprintf| を用いて 1 行目に \lstinline|"Dist:%3dcm"| 形式の距離文字列を，
 2 行目に危険度ラベル \lstinline|LEVEL_LABELS[level]| をそれぞれ生成している．
 その後，\lstinline|lcd.setCursor()| でカーソルを行頭に移動し，
-\lstinline|lcd_print_padded()| を用いて文字列と余白を出力することで，
-常に 16 文字分が埋まった見やすい表示を維持している．
+\lstinline|lcd_print_padded()| を用いて文字列と余白を出力することで，常に 16 文字分が埋まった表示を維持している．
+これにより，距離値と状態ラベルを簡潔に確認できるようになっている．
 
 \subsubsection{setup関数}
 
 \lstinline|setup()| は，Arduino 起動時に 1 回だけ実行される初期化関数である．
 引数や戻り値は持たない．
-ソースコード\ref{src:whole_program}の459〜492行目では，
-シリアルポートの初期化，HC-SR04 の TRIG/ECHO ピンの入出力設定，
-NeoPixel リングの初期化と明るさ設定，ブザー用ピンの初期化，
-LCD の初期化とバックライト ON，および初期メッセージ
-\lstinline|"Distance UI"| と \lstinline|"Initializing..."| の表示を行っている．
-また，距離関連の変数や時刻管理用変数，ブザーの状態変数を初期値に設定し，
-メインループが既知の状態から動き始めるようにしている．
+
+ソースコード\ref{src:whole_program}の459〜492行目では，シリアルポートの初期化，HC-SR04 の TRIG/ECHO ピンの入出力設定，
+NeoPixel リングの初期化と明るさ設定，ブザー用ピンの初期化，LCD の初期化とバックライト ON を順に行っている．
+また，距離関連の変数や時刻管理用変数，ブザーの状態変数を既定値に設定し，メインループが既知の状態から動き始めるようにしている．
 
 \subsubsection{loop関数}
 
-\lstinline|loop()| は，Arduino におけるメインループ関数であり，
-システムが動作している間ずっと繰り返し呼び出される．
+\lstinline|loop()| は，Arduino におけるメインループ関数であり，システムが動作している間ずっと繰り返し実行される．
 引数や戻り値は持たない．
-ソースコード\ref{src:whole_program}の501〜533行目では，
-処理を 4 つのブロック（センサ更新，NeoPixel 更新，ブザー更新，LCD 更新）に分け，
+
+ソースコード\ref{src:whole_program}の501〜533行目では，処理を 4 つのブロック（センサ更新，NeoPixel 更新，ブザー更新，LCD 更新）に分け，
 それぞれを独立した周期で実行している．
-センサ更新の部分では，前回の更新時刻との差が
-\lstinline|SENSOR_INTERVAL_MS| を超えたときに
-\lstinline|read_distance_cm()| で距離を取得し，
-\lstinline|smooth_distance_cm()| により指数移動平均で平滑化して
-\lstinline|filtered_distance_cm| に保存している．
-NeoPixel 更新では，平滑化された距離から
-\lstinline|map_distance_to_duration()| で更新周期を求め，
-その周期が経過したときに状態遷移関数 \lstinline|get_next()| を通じて
-\lstinline|current_state| を更新し，\lstinline|render_state()| でリング表示を描画する．
-ブザー更新では \lstinline|update_buzzer()| を毎ループ呼び出し，
-LCD 更新では一定間隔ごとに \lstinline|update_lcd()| を呼び出すことで，
+センサ更新では，\lstinline|SENSOR_INTERVAL_MS| ごとに \lstinline|read_distance_cm()| を呼び出して距離を取得し，
+\lstinline|smooth_distance_cm()| により指数移動平均で平滑化した結果を \lstinline|filtered_distance_cm| に保存している．
+NeoPixel 更新では，平滑化された距離から \lstinline|map_distance_to_duration()| で更新周期を求め，
+その周期が経過したときに状態遷移関数 \lstinline|get_next()| を通じて \lstinline|current_state| を更新し，
+\lstinline|render_state()| でリング表示を描画する．
+ブザー更新では \lstinline|update_buzzer()| を毎ループ呼び出し，LCD 更新では一定間隔ごとに \lstinline|update_lcd()| を呼び出すことで，
 すべての出力が非ブロッキングに協調して動作するようにしている．
 
 \section{動作例}
