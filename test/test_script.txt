@@ -1,5 +1,3 @@
-cd ~/univ/pl/report/test
-
 gcc -I.. -DTEST_FONTLIB      test.c ../fontlib.c -o test_fontlib      && ./test_fontlib      > fontlib_sample.txt
 gcc -I.. -DTEST_GET_PATTERN  test.c ../get_pattern.c -o test_get_pattern && ./test_get_pattern  > get_pattern_sample.txt
 gcc -I.. -DTEST_GET_COORD    test.c ../get_coord.c ../print_pattern.c ../iterator.c ../fontlib.c -o test_get_coord && ./test_get_coord > get_coord_sample.txt
