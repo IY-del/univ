@@ -82,7 +82,7 @@ ABC
 仕様書では，`load_txt_to_8x8`の使用例として次のコードが示されている．
 
 ```c
-int (*patterns);
+int (*patterns)[8][8];
 size_t n;
 
 if (load_txt_to_8x8("font_data01.txt", &patterns, &n) != 0) {
@@ -465,7 +465,7 @@ h=8 w=8 scale_w=2 scale_h=2 rotation=1
 仕様書では，`print_as_pattern`の使用例として次のコードが示されている．
 
 ```c
-int (*patterns);
+int (*patterns)[8][8];
 size_t n;
 /* get_patternでpatternsとnを用意する想定 */
 
