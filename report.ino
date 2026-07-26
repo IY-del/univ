@@ -27,7 +27,7 @@ const uint32_t SENSOR_INTERVAL_MS = 60;
 const uint32_t ECHO_TIMEOUT_US = (2.0f * DIST_MAX_CM / sonic) + 1000.0f;
 // 測距安定化
 const uint8_t DIST_BUFFER_SIZE = 3;
-const float EMA_WEIGHT = 0.8;
+const float EMA_WEIGHT = 0.4; // [0, 1]
 
 // NeoPixel ring
 const uint8_t NEOPIXEL_PIN = 2;
@@ -310,7 +310,7 @@ int read_distance_cm()
 // 軽い平滑化: EMA
 int smooth_distance_cm(int prev_cm, int new_cm)
 {
-    return (new_cm * EMA_WEIGHT + prev_cm) / (EMA_WEIGHT + 1);
+    return EMA_WEIGHT * new_cm + (1 - EMA_WEIGHT) * prev_cm;
 }
 
 // ==============================
