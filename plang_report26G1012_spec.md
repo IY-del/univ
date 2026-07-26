@@ -696,6 +696,7 @@ clang main.c get_pattern.c print_pattern.c get_coord.c iterator.c fontlib.c -o m
   XX    XX    XX
     XXXX  XXXX
     XXXX  XXXX
+...
 ```
 
 （以下，省略）
