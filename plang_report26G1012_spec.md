@@ -702,3 +702,15 @@ clang main.c get_pattern.c print_pattern.c get_coord.c iterator.c fontlib.c -o m
 
 この出力は，`font_data01.txt`のビット列を 8×8 パターンとして解釈し，
 `print_as_pattern`が仕様どおりに `X` とスペースを用いて表示していることを示す．
+
+# 仕様変更点
+## get_coord の変更
+
+- 出力幅と出力高さを個別に返していた `pattern_output_width`，`pattern_output_height`，`pattern_scaled_width`，`pattern_scaled_height` を廃止した．
+- 代わりに，出力サイズを `PatternSize` 構造体でまとめて返す `pattern_scaled_size` を導入した．
+- これにより，幅と高さを1つの関数呼び出しで取得できるようにし，関連する処理を集約した．
+
+## iterator の変更
+
+- `new_iter` における出力サイズの取得方法を，個別関数呼び出しから `pattern_scaled_size(view)` を用いる方式に変更した．
+- 取得した `PatternSize` の `width` および `height` を，それぞれ `out_w` と `out_h` に設定する仕様に変更した．
