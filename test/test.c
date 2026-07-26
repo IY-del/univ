@@ -133,12 +133,12 @@ void test_print_pattern(void) {
                             {0, 0, 0, 0, 0, 0, 0, 0}}};
 
   PatternView view = new_pattern_view(1, patterns);
-  printf("normal: h=%zu w=%zu scale_w=%zu scale_h=%zu rotation=%d\n", view.h,
+  printf("normal: h=%zu w=%zu scale_w=%u scale_h=%u rotation=%d\n", view.h,
          view.w, view.scale_w, view.scale_h, view.rotation);
   print_as_pattern(&view);
 
   PatternView view2x = new_pattern_view_doublescale(1, patterns);
-  printf("double: h=%zu w=%zu scale_w=%zu scale_h=%zu rotation=%d\n", view2x.h,
+  printf("double: h=%zu w=%zu scale_w=%u scale_h=%u rotation=%d\n", view2x.h,
          view2x.w, view2x.scale_w, view2x.scale_h, view2x.rotation);
   print_as_pattern(&view2x);
 }
