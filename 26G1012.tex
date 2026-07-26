@@ -938,14 +938,15 @@ LCD 更新では一定間隔ごとに \lstinline|update_lcd()| を呼び出す�
 \section{動作例}
 % スクショを使ってシステムがどのように動作するか説明すること．
 
-ここでは，Tinkercad 上のシミュレーション画面写真を用いて，距離に応じて NeoPixel リングの回転速度・色，ブザーのビープ周期，LCD の表示がどのように変化するかを示す．
-図\ref{fig:safe}, 図\ref{fig:caution_state}, 図\ref{fig:danger_state}には，それぞれの距離での代表的な動作状態を示す．
+ここでは，Tinkercad 上のシミュレーション画面を用いて，距離に応じて NeoPixel リング，圧電ブザー，LCD の動作がどのように変化するかを示す．
+図\ref{fig:safe}，図\ref{fig:caution_state}，図\ref{fig:danger_state}には，各危険度に対応する代表的な状態を示す．
 
 \begin{itemize}
-  \item 遠距離（例: 150cm 以上）では，NeoPixel の回転はゆっくりで，色は緑，ブザーは低頻度で鳴り，LCD には "SAFE" と表示される．
-  \item 中距離（例: 50〜100cm）では，回転が中程度の速さになり，色は黄，ブザーのビープもやや頻繁になり，LCD には "CAUTION" と表示される．
-  \item 近距離（例: 50cm 未満）では，回転がかなり速くなり，色は赤，ブザーが高頻度で鳴り，LCD には "DANGER" と表示される．
+  \item 遠距離（100cm 超）では，危険度は SAFE となる．NeoPixel は緑色で比較的ゆっくり回転し，ブザーは鳴動せず，LCD には距離値と ``SAFE'' が表示される．
+  \item 中距離（50cm 超 100cm 以下）では，危険度は CAUTION となる．NeoPixel は黄色に変化し，回転速度が上昇する．ブザーは一定周期で断続的に鳴動し，LCD には距離値と ``CAUTION'' が表示される．
+  \item 近距離（50cm 以下）では，危険度は DANGER となる．NeoPixel は赤色となり，回転速度がさらに上昇する．ブザーはより短い周期で鳴動し，LCD には距離値と ``DANGER'' が表示される．
 \end{itemize}
+
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\linewidth]{Figs/safe.png}
@@ -958,14 +959,15 @@ LCD 更新では一定間隔ごとに \lstinline|update_lcd()| を呼び出す�
   \caption{CAUTION 状態のシミュレーション画面}
   \label{fig:caution_state}
 \end{figure}
-
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.9\linewidth]{Figs/danger.png}
   \caption{DANGER 状態のシミュレーション画面}
   \label{fig:danger_state}
 \end{figure}
-これらの動作例から，距離が変化した際に危険度がテンポと色によって視覚・聴覚的に分かることを確認できる．
+
+以上より，本システムでは距離の短縮に伴って，NeoPixel の色と回転速度，ブザーの警告周期，LCD の表示内容が一貫して変化することを確認できる．
+このため，利用者は複数の出力手段を通じて危険度を把握できる．
 
 \section{アピールポイント}
 % 習っていないセンサを使った，センサを複数使った，制御や出力をこだわったなどを説明すること．
