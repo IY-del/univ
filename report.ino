@@ -33,7 +33,7 @@ const uint16_t UI_MIN_CM = DIST_MIN_CM;
 const uint16_t UI_MAX_CM = 180;
 
 // HC-SR04計測制御
-const uint32_t SENSOR_INTERVAL_MS = 35;
+const uint32_t SENSOR_INTERVAL_MS = 60;
 const uint32_t ECHO_TIMEOUT_US = 12000;
 
 // 測距安定化
@@ -533,9 +533,9 @@ void setup()
 
 void loop()
 {
-    unsigned long now = millis();
-
+    unsigned long now;
     // 1. センサー更新
+    now = millis();
     if (now - last_sensor_ms >= SENSOR_INTERVAL_MS)
     {
         last_sensor_ms = now;
@@ -548,8 +548,8 @@ void loop()
         Serial.print(filtered_distance_cm);
         Serial.println("cm");
     }
-
     // 2. NeoPixel更新
+    now = millis();
     int duration_ms = map_distance_to_duration(filtered_distance_cm);
     if (now - last_render_ms >= (unsigned long)duration_ms)
     {
@@ -557,11 +557,10 @@ void loop()
         current_state = get_next(current_state);
         render_state(current_state, filtered_distance_cm);
     }
-
     // 3. ブザー更新
     update_buzzer(filtered_distance_cm);
-
     // 4. LCD更新
+    now = millis();
     if (now - last_lcd_ms >= LCD_UPDATE_INTERVAL_MS)
     {
         last_lcd_ms = now;
