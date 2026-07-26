@@ -471,7 +471,7 @@ h=8 w=8 scale_w=2 scale_h=2 rotation=1
 ここで`rotation=1`はROTATE_90を意味する．
 
 ### 考察
-仕様書では，`new_pattern_view`は標準倍率・回転なしの初期値を持ち，
+仕様書では，`new_pattern_view`は標準倍率・回転90°の初期値を持ち，
 `new_pattern_view_doublescale`はそのスケール倍率だけを2倍に変更するとされている．
 実行結果がこの説明と一致していれば，両関数は仕様どおりに`PatternView`を初期化しているといえる．
 
