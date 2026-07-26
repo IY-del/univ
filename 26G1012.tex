@@ -74,7 +74,7 @@ NeoPixel リングでは距離に応じて光の回転速度と色を変化さ�
 
 既存の車庫入れ支援システムや駐車警告システムでは，距離に応じて警告音の周期を変化させる方式が広く用いられているが，本システムではこれに加えて LED パターンの進行速度を距離に対応させた点を特徴とする\cite{gripon2026MicrocontrollerBasedCarParking}．
 距離が短くなるほど表示テンポが速くなるように設計することで，危険度の上昇を数値ではなく動きの変化として認識しやすくしている．
-この構成により，暗所や瞬間的な判断が求められる場面においても，利用者が直感的に状況を把握できることを狙っている\cite{toneRef,pulseInRef,hcsr04Ref}．
+この構成により，暗所や瞬間的な判断が求められる場面においても，利用者が直感的に状況を把握できることを狙っている\cite{arduinodocumentationteam2025Tone,arduinodocumentationteam2025PulseIn,iteadstudio2010UltrasonicRangingModule}．
 
 Tinkercad で作成した本システムの共有リンクを以下に示す．\\
 \url{https://www.tinkercad.com/things/7TQ30WMwQnm-26g1012/editel?sharecode=MZAnpTt5TfT3vMYNU4AxtiqTfitiM_Kg8O0pw0faDh0}
@@ -116,7 +116,7 @@ NeoPixel Ring はデータ線を 2 番ピンに接続し，5V と GND を共有�
 各構成要素の役割を以下に示す．
 
 \begin{itemize}
-  \item HC-SR04：超音波の送受信により障害物までの距離を計測するセンサである\cite{hcsr04Ref}．
+  \item HC-SR04：超音波の送受信により障害物までの距離を計測するセンサである\cite{iteadstudio2010UltrasonicRangingModule}．
   \item Arduino Uno：距離の取得，平滑化，危険度判定，および各出力の制御を行う中核マイコンである．
   \item NeoPixel Ring 24：距離に応じて色と回転速度を変化させ，危険度を視覚的に提示する表示器である．
   \item 圧電ブザー：距離に応じて警告音の周期と周波数を変化させ，聴覚的に危険度を提示する．
@@ -131,10 +131,10 @@ NeoPixel Ring はデータ線を 2 番ピンに接続し，5V と GND を共有�
 \subsection{超音波センサによる距離計測}
 
 HC-SR04 超音波距離センサは，送信した超音波が障害物で反射して戻るまでの時間を計測することで距離を求めるセンサである．
-TRIG ピンに約 10µs の HIGH パルスを入力すると超音波が発射され，反射波を受信している間だけ ECHO ピンが HIGH となる\cite{hcsr04Ref}．
-この HIGH パルス幅は超音波の往復時間に対応するため，音速を用いて距離に換算できる\cite{hcsr04Ref}．
+TRIG ピンに約 10µs の HIGH パルスを入力すると超音波が発射され，反射波を受信している間だけ ECHO ピンが HIGH となる\cite{iteadstudio2010UltrasonicRangingModule}．
+この HIGH パルス幅は超音波の往復時間に対応するため，音速を用いて距離に換算できる\cite{iteadstudio2010UltrasonicRangingModule}．
 
-本システムでは，Arduino の \lstinline|pulseIn(ECHO_PIN, HIGH, timeout)| を用いて ECHO パルス幅を計測し，\lstinline|duration * 0.0343 / 2.0| によって cm 単位の距離へ変換している\cite{pulseInRef,hcsr04Ref}．
+本システムでは，Arduino の \lstinline|pulseIn(ECHO_PIN, HIGH, timeout)| を用いて ECHO パルス幅を計測し，\lstinline|duration * 0.0343 / 2.0| によって cm 単位の距離へ変換している\cite{arduinodocumentationteam2025PulseIn,iteadstudio2010UltrasonicRangingModule}．
 また，測定値が瞬間的に乱れることがあるため，単発の測定値をそのまま利用せず，中央値処理および指数移動平均により平滑化している．
 これにより，外れ値による表示の揺れや警告音の不安定化を抑えている．
 
@@ -158,7 +158,7 @@ NeoPixel リングは，現在状態 \lstinline|current_state| に対応する L
 これにより，利用者は数値を読まなくても，動きと色だけで危険度を把握できる．
 
 圧電ブザーは，危険度に応じて ON/OFF 時間と周波数を切り替える状態機械として実装している．
-SAFE では無音とし，CAUTION および DANGER では周期的なビープ音を出力することで，視線が表示器から外れている場合でも危険度を認識できる\cite{toneRef,noToneRef}．
+SAFE では無音とし，CAUTION および DANGER では周期的なビープ音を出力することで，視線が表示器から外れている場合でも危険度を認識できる\cite{arduinodocumentationteam2025Tone, arduinodocumentationteam2025NoTone}．
 さらに，距離に応じて周波数も変化させることで，テンポだけでなく音の高さでも状態差を表現している．
 
 LCD には，距離値と危険度ラベルを表示する．
@@ -950,4 +950,5 @@ NeoPixel 更新では，平滑化された距離から \lstinline|map_distance_t
   \item 測距値に対して中央値処理と指数移動平均を組み合わせた点である．超音波距離センサでは，一時的な外れ値や小さな揺らぎが表示や警告音の不安定化につながるため，単発の測定値をそのまま用いない構成とした．その結果，NeoPixel の点滅やブザー周期の不要な変動を抑え，利用者にとって解釈しやすい出力を実現している．
 \end{itemize}
 
+\printbibliography[title=参考文献]
 \end{document}
