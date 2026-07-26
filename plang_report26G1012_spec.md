@@ -109,8 +109,6 @@ printxs(0, "ABC");  /* スペース1文字を表示（\"ABC\"は無視される�
 ABC
 ```
 
-改修が必要なのは **get_pattern** セクションだけです。`load_txt_to_padded_8x8`と`free_padded_8x8`を、`load_txt`（汎用版）・`load_txt_to_8x8`（8×8ラッパー）・`free_memory`（`void *`で受ける汎用解放関数）に置き換えます。他のセクション（fontlib, get_coord, iterator, print_pattern, main）は改修不要なのでそのままです。
-
 # get_pattern
 
 ## 概要
