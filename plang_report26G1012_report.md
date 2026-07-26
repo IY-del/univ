@@ -99,7 +99,17 @@ free_memory(patterns);
 と説明されている．
 
 ### 実行結果
-（ここに，読み込んだ文字数nや，patterns[0]などの内容を表示した結果を貼る）
+```txt
+n = 26
+00011000
+00100100
+01000010
+01000010
+01111110
+01000010
+01000010
+00000000
+```
 
 ### 考察
 仕様書では，0/1列を8×8単位でまとめて複数文字分のパターン配列を生成するとされている．
@@ -121,7 +131,7 @@ free_memory(flat);      /* int * でも同様に呼べる */
 ```
 
 ### 実行結果
-（ここに，自分の確認用実行結果や確認方法を書く）
+異常終了なし
 
 ### 考察
 仕様書では，`free_memory`が`void *`で引数を受け取るため，
@@ -155,7 +165,11 @@ size_t out_h = size.height;
 ```
 
 ### 実行結果
-（ここに，rotationやscaleを変えたときのwidth, heightの出力結果を貼る）
+```text
+normal: width=8 height=8
+rotate90: width=8 height=8
+rotate90 scale2: width=16 height=16
+```
 
 ### 考察
 仕様書では，回転が90度または270度のときに`w`と`h`が入れ替わり，
@@ -183,7 +197,11 @@ PatternCoord src = resolve_coord(&view, out_x, out_y);
 ```
 
 ### 実行結果
-（ここに，いくつかの out_x, out_y に対する src.x, src.y の結果を貼る）
+```text
+resolve(0,0) -> (0,7)
+rotate90 resolve(0,0) -> (0,7)
+rotate90 scale2 resolve(1,1) -> (0,7)
+```
 
 ### 考察
 仕様書では，まずスケール倍率で出力座標を論理座標へ戻し，
@@ -224,7 +242,76 @@ while (pattern_iterator_next(&it, &step) != PATTERN_EVENT_END) {
 全文字の走査終了後に`PATTERN_EVENT_END`を返すと説明されている．
 
 ### 実行結果
-（ここに，CELL / NEWLINE / END の順序が分かる実行結果を貼る）
+```text
+pattern_iterator_next
+CELL ch=0 src=(0,7)
+CELL ch=0 src=(0,6)
+CELL ch=0 src=(0,5)
+CELL ch=0 src=(0,4)
+CELL ch=0 src=(0,3)
+CELL ch=0 src=(0,2)
+CELL ch=0 src=(0,1)
+CELL ch=0 src=(0,0)
+NEWLINE
+CELL ch=0 src=(1,7)
+CELL ch=0 src=(1,6)
+CELL ch=0 src=(1,5)
+CELL ch=0 src=(1,4)
+CELL ch=0 src=(1,3)
+CELL ch=0 src=(1,2)
+CELL ch=0 src=(1,1)
+CELL ch=0 src=(1,0)
+NEWLINE
+CELL ch=0 src=(2,7)
+CELL ch=0 src=(2,6)
+CELL ch=0 src=(2,5)
+CELL ch=0 src=(2,4)
+CELL ch=0 src=(2,3)
+CELL ch=0 src=(2,2)
+CELL ch=0 src=(2,1)
+CELL ch=0 src=(2,0)
+NEWLINE
+...
+NEWLINE
+CELL ch=0 src=(7,7)
+CELL ch=0 src=(7,6)
+CELL ch=0 src=(7,5)
+CELL ch=0 src=(7,4)
+CELL ch=0 src=(7,3)
+CELL ch=0 src=(7,2)
+CELL ch=0 src=(7,1)
+CELL ch=0 src=(7,0)
+NEWLINE
+CELL ch=1 src=(0,7)
+CELL ch=1 src=(0,6)
+CELL ch=1 src=(0,5)
+CELL ch=1 src=(0,4)
+CELL ch=1 src=(0,3)
+CELL ch=1 src=(0,2)
+CELL ch=1 src=(0,1)
+CELL ch=1 src=(0,0)
+NEWLINE
+CELL ch=1 src=(1,7)
+CELL ch=1 src=(1,6)
+CELL ch=1 src=(1,5)
+CELL ch=1 src=(1,4)
+CELL ch=1 src=(1,3)
+CELL ch=1 src=(1,2)
+CELL ch=1 src=(1,1)
+CELL ch=1 src=(1,0)
+NEWLINE
+...
+NEWLINE
+CELL ch=1 src=(7,7)
+CELL ch=1 src=(7,6)
+CELL ch=1 src=(7,5)
+CELL ch=1 src=(7,4)
+CELL ch=1 src=(7,3)
+CELL ch=1 src=(7,2)
+CELL ch=1 src=(7,1)
+CELL ch=1 src=(7,0)
+END
+```
 
 ### 考察
 仕様書では，行単位で走査し，各行の終わりで改行イベントを返し，
@@ -260,7 +347,62 @@ while (pattern_iterator_next_h(&it, &step) != PATTERN_EVENT_END) {
 - 行末まで達した場合に `PATTERN_EVENT_END` を返す．
 
 ### 実行結果
-（ここに，next と next_h の違いが分かる実行結果を貼る）
+```text
+pattern_iterator_next_h
+CELL ch=0 src=(0,7)
+CELL ch=0 src=(0,6)
+CELL ch=0 src=(0,5)
+CELL ch=0 src=(0,4)
+CELL ch=0 src=(0,3)
+CELL ch=0 src=(0,2)
+CELL ch=0 src=(0,1)
+CELL ch=0 src=(0,0)
+CELL ch=1 src=(0,7)
+CELL ch=1 src=(0,6)
+CELL ch=1 src=(0,5)
+CELL ch=1 src=(0,4)
+CELL ch=1 src=(0,3)
+CELL ch=1 src=(0,2)
+CELL ch=1 src=(0,1)
+CELL ch=1 src=(0,0)
+NEWLINE
+CELL ch=0 src=(1,7)
+CELL ch=0 src=(1,6)
+CELL ch=0 src=(1,5)
+CELL ch=0 src=(1,4)
+CELL ch=0 src=(1,3)
+CELL ch=0 src=(1,2)
+CELL ch=0 src=(1,1)
+CELL ch=0 src=(1,0)
+CELL ch=1 src=(1,7)
+CELL ch=1 src=(1,6)
+CELL ch=1 src=(1,5)
+CELL ch=1 src=(1,4)
+CELL ch=1 src=(1,3)
+CELL ch=1 src=(1,2)
+CELL ch=1 src=(1,1)
+CELL ch=1 src=(1,0)
+NEWLINE
+...
+NEWLINE
+CELL ch=0 src=(7,7)
+CELL ch=0 src=(7,6)
+CELL ch=0 src=(7,5)
+CELL ch=0 src=(7,4)
+CELL ch=0 src=(7,3)
+CELL ch=0 src=(7,2)
+CELL ch=0 src=(7,1)
+CELL ch=0 src=(7,0)
+CELL ch=1 src=(7,7)
+CELL ch=1 src=(7,6)
+CELL ch=1 src=(7,5)
+CELL ch=1 src=(7,4)
+CELL ch=1 src=(7,3)
+CELL ch=1 src=(7,2)
+CELL ch=1 src=(7,1)
+CELL ch=1 src=(7,0)
+END
+```
 
 ### 考察
 仕様書では，`pattern_iterator_next_h`は行優先ではなく，
@@ -299,7 +441,14 @@ print_as_pattern(&view2x);
 ```
 
 ### 実行結果
-（ここに，生成した view の h, w, scale_w, scale_h, rotation の出力結果を貼る）
+normal:
+```text
+h=8 w=8 scale_w=1 scale_h=1 rotation=1
+```
+double:
+```text
+h=8 w=8 scale_w=2 scale_h=2 rotation=1
+```
 
 ### 考察
 仕様書では，`new_pattern_view`は標準倍率・回転なしの初期値を持ち，
@@ -334,7 +483,49 @@ print_as_pattern(&view);
 - 最後に改行を1つ追加する．
 
 ### 実行結果
-（ここに，print_as_pattern の表示結果を貼る）
+pattern:
+```c
+{{
+    {0, 0, 1, 1, 0, 0, 0, 0},
+    {0, 0, 1, 1, 0, 0, 0, 0},
+    {0, 0, 1, 1, 0, 0, 0, 0},
+    {1, 1, 1, 1, 1, 1, 0, 0},
+    {1, 1, 0, 0, 1, 1, 0, 0},
+    {1, 1, 0, 0, 1, 1, 0, 0},
+    {1, 1, 0, 0, 1, 1, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0}
+}}
+```
+normal:
+```text
+ XXXX
+ XXXX
+    XXXX
+    XXXX
+ XXXX
+ XXXX
+
+
+```
+double
+```text
+  XXXXXXXX
+  XXXXXXXX
+  XXXXXXXX
+  XXXXXXXX
+        XXXXXXXX
+        XXXXXXXX
+        XXXXXXXX
+        XXXXXXXX
+  XXXXXXXX
+  XXXXXXXX
+  XXXXXXXX
+  XXXXXXXX
+
+
+
+
+```
 
 ### 考察
 仕様書では，パターン配列の各セル値が0/1に応じて
@@ -396,11 +587,41 @@ clang main.c get_pattern.c print_pattern.c get_coord.c iterator.c fontlib.c -o m
   XX    XX    XX
     XXXX  XXXX
     XXXX  XXXX
+...
 ```
 
 ### 実行結果
-（ここに，main の実行結果を貼る）
+```text
+  XX
+  XX
+  XXXXXXXXXXXX
+  XXXXXXXXXXXX
+  XX    XX    XX
+  XX    XX    XX
+        XX    XX
+        XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XXXXXXXXXXXX
+  XXXXXXXXXXXX
+  XX
+  XX
 
+
+  XX          XX
+  XX          XX
+  XXXXXXXXXXXXXX
+  XXXXXXXXXXXXXX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+  XX    XX    XX
+    XXXX  XXXX
+    XXXX  XXXX
+...
+```
 ### 考察
 仕様書では，フォントデータの読み込みから最終表示までの一連の処理を
 `main`が担当するとされている．
