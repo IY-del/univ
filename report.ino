@@ -22,11 +22,12 @@ const uint16_t DIST_MAX_CM = 335;
 const uint16_t DIST_DANGER_CM = 50;
 const uint16_t DIST_CAUTION_CM = 100;
 // HC-SR04計測制御
+const float sonic = 0.0343f;
 const uint32_t SENSOR_INTERVAL_MS = 60;
-const uint32_t ECHO_TIMEOUT_US = 12000;
+const uint32_t ECHO_TIMEOUT_US = (2.0f * DIST_MAX_CM / sonic) + 1000.0f;
 // 測距安定化
 const uint8_t DIST_BUFFER_SIZE = 3;
-const float EMA_WEIGHT = 1.2;
+const float EMA_WEIGHT = 0.8;
 
 // NeoPixel ring
 const uint8_t NEOPIXEL_PIN = 2;
@@ -90,6 +91,9 @@ DangerLevel get_danger_level(int distance_cm);
 uint32_t color_from_level(DangerLevel level);
 void apply_buzzer_profile(DangerLevel level, int distance_cm);
 
+// ==============================
+// ライブラリオブジェクト
+// ==============================
 Adafruit_NeoPixel ring(NEOPIXEL_NUM, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 LiquidCrystal_I2C lcd(LCD_ADDR, LCD_COLS, LCD_ROWS);
 
@@ -156,13 +160,6 @@ int buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
 // ==============================
 // ヘルパ
 // ==============================
-
-uint32_t get_echo_timeout_us()
-{
-    const float timeout_us = (2.0f * DIST_MAX_CM / 0.0343f) + 1000.0f;
-    return (uint32_t)timeout_us;
-}
-
 DangerLevel get_danger_level(int distance_cm)
 {
     if (distance_cm <= (int)DIST_DANGER_CM)
@@ -286,16 +283,14 @@ int measure_distance_cm_raw()
     digitalWrite(TRIG_PIN, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
-
-    const uint32_t echo_timeout_us = get_echo_timeout_us();
-    unsigned long duration = pulseIn(ECHO_PIN, HIGH, echo_timeout_us);
+    unsigned long duration = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
 
     if (duration == 0)
     {
         return DIST_MAX_CM;
     }
 
-    int distance = (int)(duration * 0.0343f / 2.0f);
+    int distance = (int)(duration * sonic / 2.0f);
     return clamp_distance_cm(distance);
 }
 
@@ -495,9 +490,6 @@ void setup()
     buzzer_on_ms = BUZZER_CAUTION_ON_MS;
     buzzer_off_ms = BUZZER_CAUTION_OFF_MS;
     buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
-
-    Serial.print("echo_timeout_us=");
-    Serial.println(get_echo_timeout_us());
 }
 
 // ==============================
