@@ -99,7 +99,7 @@ free_memory(patterns);
 と説明されている．
 
 ### 実行結果
-```txt
+```text
 n = 26
 00011000
 00100100
@@ -126,7 +126,7 @@ n = 26
 仕様書では，次の使用例が示されている．
 
 ```c
-free_memory(patterns);  /* int (*) でもキャスト不要 */
+free_memory(patterns);  /* int (*)[8][8] でもキャスト不要 */ */
 free_memory(flat);      /* int * でも同様に呼べる */
 ```
 
