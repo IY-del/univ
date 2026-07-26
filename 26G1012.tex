@@ -83,6 +83,7 @@ Tinkercad で作成した本システムの共有リンクを以下に示す．\
 % 構成要素のリスト(表)と回路図を表示し，参照しながら接続関係や用途を説明すること．
 
 本システムの構成要素を表\ref{tab:components}に示す．
+また，回路図を図\ref{fig:circuit}に示す．
 
 \begin{table}[h]
   \centering
@@ -101,10 +102,6 @@ Tinkercad で作成した本システムの共有リンクを以下に示す．\
   \end{tabular}
 \end{table}
 
-回路図は図\ref{fig:circuit}に示す．
-HC-SR04 の TRIG/ECHO ピンを Arduino Uno のデジタルピン 8 番と 9 番に接続し，NeoPixel Ring は 2 番ピンのデータ線と電源・GNDで制御する．
-圧電ブザーは 7 番ピンから駆動し，LCD は I2C バス（SDA/SCL）経由で Arduino に接続している．
-
 \begin{figure}[htbp]
   \centering
   \includegraphics[width=0.92\linewidth]{Figs/seq.pdf}
@@ -112,14 +109,18 @@ HC-SR04 の TRIG/ECHO ピンを Arduino Uno のデジタルピン 8 番と 9 番
   \label{fig:circuit}
 \end{figure}
 
-各構成要素は，次の役割に分かれる．
+図\ref{fig:circuit}に示すように，HC-SR04 の TRIG ピンおよび ECHO ピンは Arduino Uno のデジタルピン 8 番，9 番に接続している．
+NeoPixel Ring はデータ線を 2 番ピンに接続し，5V と GND を共有して制御する．
+圧電ブザーは 7 番ピンから駆動し，LCD は I2C インタフェースを用いて SDA，SCL を Arduino に接続している．
+
+各構成要素の役割を以下に示す．
 
 \begin{itemize}
-  \item HC-SR04: 壁までの距離を 2〜400cm の範囲で計測する距離センサ\cite{hcsr04Ref}．
-  \item Arduino Uno: センサ値を読み取り，距離に応じた状態遷移と出力制御を行う中核マイコン．
-  \item NeoPixel Ring24: LED 24個をリング状に配置し，距離に応じた回転パターンと色で危険度を視覚的に表示．
-  \item 圧電ブザー: 距離に応じたビープ周期で警告音を出すことで，視線が LED から外れていても危険を認識できるようにする．
-  \item 16×2 I2C LCD: 距離値（cm）と SAFE / CAUTION / DANGER といった状態ラベルを文字で表示し，UI として用いる．
+  \item HC-SR04：超音波の送受信により障害物までの距離を計測するセンサである\cite{hcsr04Ref}．
+  \item Arduino Uno：距離の取得，平滑化，危険度判定，および各出力の制御を行う中核マイコンである．
+  \item NeoPixel Ring 24：距離に応じて色と回転速度を変化させ，危険度を視覚的に提示する表示器である．
+  \item 圧電ブザー：距離に応じて警告音の周期と周波数を変化させ，聴覚的に危険度を提示する．
+  \item 16×2 I2C LCD：距離値と危険度ラベルを文字として表示し，現在状態を明示する．
 \end{itemize}
 
 \section{システムの説明}
