@@ -5,69 +5,6 @@
 // ==============================
 // 定数定義
 // ==============================
-
-// 距離センサー (HC-SR04)
-const uint8_t TRIG_PIN = 8;
-const uint8_t ECHO_PIN = 9;
-
-// NeoPixel ring
-const uint8_t NEOPIXEL_PIN = 2;
-const uint8_t NEOPIXEL_NUM = 24;
-
-// 圧電ブザー
-const uint8_t BUZZER_PIN = 7;
-
-// LCD (16x2 I2C)
-const uint8_t LCD_ADDR = 0x27;
-const uint8_t LCD_COLS = 16;
-const uint8_t LCD_ROWS = 2;
-
-// 距離閾値
-const uint16_t DIST_MIN_CM = 2;
-const uint16_t DIST_MAX_CM = 335;
-const uint16_t DIST_DANGER_CM = 50;
-const uint16_t DIST_CAUTION_CM = 100;
-
-// UIマッピング用レンジ
-const uint16_t UI_MIN_CM = DIST_MIN_CM;
-const uint16_t UI_MAX_CM = 180;
-
-// HC-SR04計測制御
-const uint32_t SENSOR_INTERVAL_MS = 60;
-const uint32_t ECHO_TIMEOUT_US = 12000;
-
-// 測距安定化
-const uint8_t DIST_BUFFER_SIZE = 3;
-
-// UI更新間隔
-const uint16_t DURATION_MIN_MS = 40;
-const uint16_t DURATION_MAX_MS = 500;
-const uint16_t LCD_UPDATE_INTERVAL_MS = 200;
-
-// ブザー周波数
-const uint16_t BUZZER_FREQ_NEAR_HZ = 2200;
-const uint16_t BUZZER_FREQ_FAR_HZ = 800;
-
-// ブザーON/OFF比率
-const uint16_t BUZZER_DANGER_ON_MS = 180;
-const uint16_t BUZZER_DANGER_OFF_MS = 80;
-const uint16_t BUZZER_CAUTION_ON_MS = 80;
-const uint16_t BUZZER_CAUTION_OFF_MS = 220;
-
-// 状態空間
-const uint8_t STATE_COUNT = NEOPIXEL_NUM;
-
-// ジェネレータの種類
-enum StateLogic : uint8_t
-{
-    STATE_LOGIC_INC,
-    STATE_LOGIC_LFSR,
-    STATE_LOGIC_MOD
-};
-
-// 使用するgenerator
-const StateLogic state_logic_num = STATE_LOGIC_INC;
-
 // 危険度
 enum DangerLevel : uint8_t
 {
@@ -76,6 +13,31 @@ enum DangerLevel : uint8_t
     LEVEL_DANGER
 };
 
+// 距離センサー (HC-SR04)
+const uint8_t TRIG_PIN = 8;
+const uint8_t ECHO_PIN = 9;
+// 距離閾値
+const uint16_t DIST_MIN_CM = 2;
+const uint16_t DIST_MAX_CM = 335;
+const uint16_t DIST_DANGER_CM = 50;
+const uint16_t DIST_CAUTION_CM = 100;
+// HC-SR04計測制御
+const uint32_t SENSOR_INTERVAL_MS = 60;
+const uint32_t ECHO_TIMEOUT_US = 12000;
+// 測距安定化
+const uint8_t DIST_BUFFER_SIZE = 3;
+
+// NeoPixel ring
+const uint8_t NEOPIXEL_PIN = 2;
+const uint8_t NEOPIXEL_NUM = 24;
+const uint8_t LEVEL_COLORS[][3] = {
+    {0, 50, 0},  // LEVEL_SAFE
+    {50, 25, 0}, // LEVEL_CAUTION
+    {50, 0, 0},  // LEVEL_DANGER
+};
+
+// 圧電ブザー
+const uint8_t BUZZER_PIN = 7;
 // ブザー状態
 enum BuzzerState : uint8_t
 {
@@ -83,15 +45,49 @@ enum BuzzerState : uint8_t
     BUZZER_BEEP_ON,
     BUZZER_BEEP_OFF
 };
+// ブザー周波数
+const uint16_t BUZZER_FREQ_NEAR_HZ = 2200;
+const uint16_t BUZZER_FREQ_FAR_HZ = 800;
+// ブザーON/OFF比率
+const uint16_t BUZZER_DANGER_ON_MS = 180;
+const uint16_t BUZZER_DANGER_OFF_MS = 80;
+const uint16_t BUZZER_CAUTION_ON_MS = 80;
+const uint16_t BUZZER_CAUTION_OFF_MS = 220;
 
+// LCD (16x2 I2C)
+const uint8_t LCD_ADDR = 0x27;
+const uint8_t LCD_COLS = 16;
+const uint8_t LCD_ROWS = 2;
+const char *LEVEL_LABELS[] = {
+    "SAFE",    // LEVEL_SAFE
+    "CAUTION", // LEVEL_CAUTION
+    "DANGER",  // LEVEL_DANGER
+};
+
+// UIマッピング用レンジ
+const uint16_t UI_MIN_CM = DIST_MIN_CM;
+const uint16_t UI_MAX_CM = 180;
+// UI更新間隔
+const uint16_t DURATION_MIN_MS = 40;
+const uint16_t DURATION_MAX_MS = 500;
+const uint16_t LCD_UPDATE_INTERVAL_MS = 200;
+
+// 状態遷移ロジック
+const uint8_t STATE_COUNT = NEOPIXEL_NUM;
+enum StateLogic : uint8_t
+{
+    STATE_LOGIC_INC,
+    STATE_LOGIC_LFSR,
+    STATE_LOGIC_MOD
+};
+const StateLogic state_logic_num = STATE_LOGIC_INC;
+
+// ==============================
 // 型定義エラー対策のプロトタイプ
+// ==============================
 DangerLevel get_danger_level(int distance_cm);
 uint32_t color_from_level(DangerLevel level);
 void apply_buzzer_profile(DangerLevel level, int distance_cm);
-
-// ==============================
-// ライブラリオブジェクト
-// ==============================
 
 Adafruit_NeoPixel ring(NEOPIXEL_NUM, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 LiquidCrystal_I2C lcd(LCD_ADDR, LCD_COLS, LCD_ROWS);
@@ -353,16 +349,8 @@ int map_distance_to_duration(int distance_cm)
 
 uint32_t color_from_level(DangerLevel level)
 {
-    switch (level)
-    {
-    case LEVEL_DANGER:
-        return ring.Color(50, 0, 0);
-    case LEVEL_CAUTION:
-        return ring.Color(50, 25, 0);
-    case LEVEL_SAFE:
-    default:
-        return ring.Color(0, 50, 0);
-    }
+    const uint8_t *c = LEVEL_COLORS[level];
+    return ring.Color(c[0], c[1], c[2]);
 }
 
 void render_state(uint8_t state, int distance_cm)
@@ -457,27 +445,11 @@ void update_lcd(int distance_cm)
 {
     char line0[17];
     char line1[17];
-
     snprintf(line0, sizeof(line0), "Dist:%3dcm", distance_cm);
-
     DangerLevel level = get_danger_level(distance_cm);
-    switch (level)
-    {
-    case LEVEL_DANGER:
-        snprintf(line1, sizeof(line1), "DANGER");
-        break;
-    case LEVEL_CAUTION:
-        snprintf(line1, sizeof(line1), "CAUTION");
-        break;
-    case LEVEL_SAFE:
-    default:
-        snprintf(line1, sizeof(line1), "SAFE");
-        break;
-    }
-
+    snprintf(line1, sizeof(line1), "%s", LEVEL_LABELS[level]);
     lcd.setCursor(0, 0);
     lcd_print_padded(line0);
-
     lcd.setCursor(0, 1);
     lcd_print_padded(line1);
 }
