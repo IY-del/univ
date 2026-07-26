@@ -126,7 +126,7 @@ Generator gens[] = {
     },
     [](uint8_t current) -> uint8_t
     {
-        constexpr uint8_t a = 5;
+        constexpr uint8_t a = 13;
         return (current * a + 1) % STATE_COUNT;
     }};
 
