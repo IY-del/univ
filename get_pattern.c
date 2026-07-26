@@ -1,6 +1,7 @@
 #include "get_pattern.h"
 
 #include <ctype.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 
