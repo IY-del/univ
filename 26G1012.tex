@@ -138,23 +138,18 @@ TRIG ピンに約 10µs の HIGH パルスを入力すると超音波が発射�
 また，測定値が瞬間的に乱れることがあるため，単発の測定値をそのまま利用せず，中央値処理および指数移動平均により平滑化している．
 これにより，外れ値による表示の揺れや警告音の不安定化を抑えている．
 
-\subsection{距離に応じた内部処理の流れ}
+\subsection{Arduino による内部処理}
 
-Arduino は，取得した距離 cm から「LED パターンの更新周期（duration）」を計算し，その周期で状態遷移ジェネレータを進める．
-距離から duration へのマッピングは \lstinline|map_distance_to_duration(int distance_cm)| 関数内部で行い，近距離ほど短い duration，遠距離ほど長い duration になるように設計している．
+Arduino は，取得した距離値をもとに危険度判定，表示速度の計算，および各出力の更新制御を行う．
+まず距離値から \lstinline|get_danger_level()| により SAFE，CAUTION，DANGER の三段階の危険度を判定し，この判定結果を NeoPixel の色，ブザーの動作モード，LCD の表示内容に共通して用いている．
+これにより，各出力の意味づけが統一され，利用者にとって解釈しやすいインタフェースとなる．
 
-距離と duration の関係は，以下のような二乗カーブで定義している．
+また，NeoPixel の表示テンポを決定するために，\lstinline|map_distance_to_duration()| で距離を状態更新周期へ変換している．
+この関数では，距離を正規化した値 \lstinline|x| に対して \lstinline|t = x * x| を用いることで二乗カーブを構成し，近距離側ほど変化が急になるように設計している．
+その結果，障害物に接近したときには LED パターンの進行が急激に速くなり，危険度の上昇をテンポの変化として直感的に伝えられる．
 
-\begin{itemize}
-  \item \lstinline|DIST_MIN_CM|〜\lstinline|DIST_MAX_CM| を 0〜1 の区間に正規化した値を \lstinline|x| とする．
-  \item \lstinline|t = x * x| とすることで，近距離側で急激に変化するカーブを作る．
-  \item \lstinline|DURATION_MIN_MS|〜\lstinline|DURATION_MAX_MS| の間に \lstinline|t| をマッピングし，近距離ほど \lstinline|DURATION_MIN_MS| に近づくようにする．
-\end{itemize}
-
-これにより，距離が短くなるほど NeoPixel の回転速度とブザーのビープが一気にせわしなくなり，危険度の上昇を直感的に感じ取れるようになる．
-
-内部状態としては，\lstinline|current_state| を 0〜23 の整数で持ち，\lstinline|STATE_COUNT = NEOPIXEL_NUM| として NeoPixel 24 個のインデックスに対応させている．
-状態遷移そのものはジェネレータ関数を通して抽象化されており，距離はあくまで状態更新の速さにのみ影響し，遷移の規則そのものは距離に依存しないようにしている．
+さらに，NeoPixel の状態更新，ブザー制御，LCD 更新はそれぞれ独立した周期で実行している．
+この構成により，\lstinline|delay()| に依存しない非ブロッキングな制御が可能となり，複数の出力を同時に滑らかに動作させている．
 
 \subsection{出力の振る舞い}
 
