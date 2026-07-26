@@ -712,5 +712,5 @@ clang main.c get_pattern.c print_pattern.c get_coord.c iterator.c fontlib.c -o m
 
 ## iterator の変更
 
-- get_coordの仕様変更に伴い、`new_iter` における出力サイズの取得方法を，個別関数呼び出しから `pattern_scaled_size(view)` を用いる方式に変更した．
+- get_coordの仕様変更に伴い，`new_iter` における出力サイズの取得方法を，個別関数呼び出しから `pattern_scaled_size(view)` を用いる方式に変更した．
 - 取得した `PatternSize` の `width` および `height` を，それぞれ `out_w` と `out_h` に設定する仕様に変更した．
