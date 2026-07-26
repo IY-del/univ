@@ -50,31 +50,51 @@ void test_get_pattern(void) {
 
 /* get_coord のテスト ----------------------------------------------------- */
 #ifdef TEST_GET_COORD
+static void report_coord(const char* label, const PatternView* view, size_t ox,
+                         size_t oy) {
+  PatternSize size = pattern_scaled_size(view);
+  PatternCoord src = resolve_coord(view, ox, oy);
+  printf("%-22s size=(w=%zu,h=%zu) resolve(%zu,%zu) -> (%zu,%zu)\n", label,
+         size.width, size.height, ox, oy, src.x, src.y);
+}
+
 void test_get_coord(void) {
   int dummy[1][8][8] = {{{0}}};
-
   PatternView view = new_pattern_view(1, dummy);
 
-  PatternSize size1 = pattern_scaled_size(&view);
-  printf("normal: width=%zu height=%zu\n", size1.width, size1.height);
+  /* 非正方形にして w/h の入れ替わりを可視化する */
+  view.w = 8;
+  view.h = 4;
 
-  PatternCoord src1 = resolve_coord(&view, 0, 0);
-  printf("resolve(0,0) -> (%zu,%zu)\n", src1.x, src1.y);
+  /* 1. 回転なし（基準確認） */
+  view.rotation = ROTATE_0;
+  report_coord("rotate0", &view, 0, 0);
+  report_coord("rotate0 corner", &view, 7, 3);
 
+  /* 2. 90度回転（w/hが入れ替わるはず） */
   view.rotation = ROTATE_90;
-  PatternSize size2 = pattern_scaled_size(&view);
-  printf("rotate90: width=%zu height=%zu\n", size2.width, size2.height);
+  report_coord("rotate90", &view, 0, 0);
+  report_coord("rotate90 corner", &view, 3, 7);
 
-  PatternCoord src2 = resolve_coord(&view, 0, 0);
-  printf("rotate90 resolve(0,0) -> (%zu,%zu)\n", src2.x, src2.y);
+  /* 3. 180度回転（未検証だった経路） */
+  view.rotation = ROTATE_180;
+  report_coord("rotate180", &view, 0, 0);
+  report_coord("rotate180 corner", &view, 7, 3);
 
-  view.scale_w = 2;
+  /* 4. 270度回転（未検証だった経路） */
+  view.rotation = ROTATE_270;
+  report_coord("rotate270", &view, 0, 0);
+  report_coord("rotate270 corner", &view, 3, 7);
+
+  /* 5. 非対称スケール（scale_wとscale_hを別々の値にして独立性を確認） */
+  view.rotation = ROTATE_0;
+  view.scale_w = 3;
   view.scale_h = 2;
-  PatternSize size3 = pattern_scaled_size(&view);
-  printf("rotate90 scale2: width=%zu height=%zu\n", size3.width, size3.height);
+  report_coord("scale_w3_h2", &view, 0, 0);
 
-  PatternCoord src3 = resolve_coord(&view, 1, 1);
-  printf("rotate90 scale2 resolve(1,1) -> (%zu,%zu)\n", src3.x, src3.y);
+  /* 6. 回転90度 + 非対称スケールの組み合わせ */
+  view.rotation = ROTATE_90;
+  report_coord("rotate90_scale_w3_h2", &view, 0, 0);
 }
 #endif
 
