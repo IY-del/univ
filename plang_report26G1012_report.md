@@ -89,7 +89,7 @@ if (load_txt_to_8x8("font_data01.txt", &patterns, &n) != 0) {
     /* エラー処理 */
 }
 
-/* patterns〜patterns[n-1]に8×8のパターンが入る */
+/* patterns[0]〜patterns[n-1]に8×8のパターンが入る */
 
 free_memory(patterns);
 ```
