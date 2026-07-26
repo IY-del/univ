@@ -531,7 +531,7 @@ $ LD_LIBRARY_PATH=. ./a.out
 
 ## new_pattern_view
 
-標準倍率（スケール1倍）かつ回転なし（0度）で表示するための`PatternView`を初期化する関数である．
+標準倍率（スケール1倍）かつ回転90°で表示するための`PatternView`を初期化する関数である．
 
 - 高さ・幅を `PATTERN_DEFAULT_H`/`PATTERN_DEFAULT_W`（8×8）に設定．
 - `string`フィールドを `"X"` に設定．
