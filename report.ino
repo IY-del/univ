@@ -82,7 +82,7 @@ enum StateLogic : uint8_t
     STATE_LOGIC_LFSR,
     STATE_LOGIC_MOD
 };
-const StateLogic state_logic_num = STATE_LOGIC_INC;
+const StateLogic state_logic_num = STATE_LOGIC_MOD;
 
 // ==============================
 // 型定義エラー対策のプロトタイプ
