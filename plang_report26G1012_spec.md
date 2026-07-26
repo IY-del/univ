@@ -413,7 +413,7 @@ pattern_iterator_next_h | 水平優先（文字を切り替える順序が異な
 
 `PatternView`の情報をもとに，イテレータ構造体`PatternIterator`を初期化する関数である．
 
-- 出力幅・高さを `pattern_scaled_width/view` で計算し，`out_w/out_h`に設定する．
+- 出力幅・高さを `pattern_scaled_size(view)` で取得し，`size.width` と `size.height` を `out_w/out_h` に設定する．
 - 開始位置として，`x=0, y=0, ch=0`とする．
 
 パラメータ名 | 型 | 意味
