@@ -163,112 +163,176 @@ NeoPixel の色は距離レンジごとに三段階に分けており，近距�
 ブザーは状態機械として実装し，\lstinline|tone()| と \lstinline|noTone()| の切り替えを明確化することで，危険度に応じたリズムを非ブロッキングに表現している\cite{toneRef,noToneRef}．
 
 \section{プログラムの説明}
-
 \subsection{プログラム全体の説明}
+本プログラム全体をソースコード\ref{src:whole_program}に示す．
+本プログラムは，超音波センサから取得した距離をもとに，
+NeoPixel リング，圧電ブザー，LCD を協調制御する構成を持つ．
+また，距離値には中央値処理と指数移動平均による平滑化を適用し，
+表示や警告音の急激な揺れを抑えている．
 
-本プログラムは，超音波センサから距離を取得し，それをもとに状態遷移ジェネレータ，NeoPixel 表示，ブザー音，LCD 表示を協調制御する構造を持つ．
-距離に依存するのはパターンの進む速さと色・ビープ周期であり，状態遷移のルールはジェネレータとして独立に定義されている．
+\begin{lstlisting}[caption=システム全体のプログラム,label=src:whole_program]
+#include <Adafruit_NeoPixel.h>
+#include <LiquidCrystal_I2C.h>
+#include <string.h>
 
-中心となる考え方は，\lstinline|current_state -> next_state| を関数ポインタで表現することである．
-これにより，ジェネレータを差し替えながら同じ距離 UI と同じ NeoPixel レンダリングを保ったまま，内部の遷移パターンだけをテストできるようになっている．
-
-\subsection{関数の詳細}
-
-\subsubsection{setup関数}
-
-\begin{lstlisting}[firstnumber=1, caption=setup関数, label=setup]
-void setup() {
-  Serial.begin(9600);
-
-  pinMode(TRIG_PIN, OUTPUT);
-  pinMode(ECHO_PIN, INPUT);
-
-  ring.begin();
-  ring.setBrightness(40);
-  ring.clear();
-  ring.show();
-
-  pinMode(BUZZER_PIN, OUTPUT);
-  noTone(BUZZER_PIN);
-
-  lcd.init();
-  lcd.backlight();
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print("Distance UI");
-
-  current_state = 0;
-  last_update_ms = 0;
-  last_beep_ms = 0;
-}
-\end{lstlisting}
-
-\begin{itemize}
-  \item シリアルポートの初期化により，デバッグ用の距離値出力を可能にしている．
-  \item HC-SR04 の TRIG/ECHO ピンをそれぞれ OUTPUT/INPUT に設定し，距離測定が行えるようにする．
-  \item NeoPixel リングに対して begin と setBrightness を呼び，初期状態として全 LED を消灯したうえで明るさを中程度に設定する．
-  \item ブザー用ピンを OUTPUT に設定し，初期状態では noTone によって無音にする．
-  \item LCD を初期化し，バックライトを ON にしてからタイトル文字列 "Distance UI" を表示することで，システムが起動していることを示す．
-  \item 状態変数と時間管理変数を初期化し，ループ処理が正しいタイミングからスタートするようにする．
-\end{itemize}
-
-\subsubsection{loop関数}
-
-\begin{lstlisting}[firstnumber=1, caption=loop関数, label=loop]
-void loop() {
-  unsigned long now = millis();
-
-  if (now - last_sensor_ms >= SENSOR_INTERVAL_MS) {
-    last_sensor_ms = now;
-    measured_distance_cm = measure_distance_cm_raw();
-    filtered_distance_cm = smooth_distance_cm(filtered_distance_cm,
-                                               measured_distance_cm);
-  }
-
-  int duration_ms = map_distance_to_duration(filtered_distance_cm);
-  if (now - last_render_ms >= (unsigned long)duration_ms) {
-    last_render_ms = now;
-    current_state = get_next(current_state);
-    render_state(current_state, filtered_distance_cm);
-  }
-
-  update_buzzer(filtered_distance_cm);
-
-  if (now - last_lcd_ms >= LCD_UPDATE_INTERVAL_MS) {
-    last_lcd_ms = now;
-    update_lcd(filtered_distance_cm);
-  }
-}
-\end{lstlisting}
-
-\begin{itemize}
-  \item 毎ループで現在時刻を取得し，センサ更新・LED 更新・ブザー更新・LCD 更新を個別の周期で処理する．
-  \item 距離計測は一定間隔で行い，取得した値は平滑化して利用することで，表示のちらつきを抑えている．
-  \item \lstinline|map_distance_to_duration(distance_cm)| により，距離を状態更新間隔に変換し，近いほど短い周期，遠いほど長い周期となるように調整する．
-  \item 状態遷移は \lstinline|gens[state_logic_num]| から選ばれるジェネレータ関数ポインタを通じて実行され，\lstinline|current_state = get_next(current_state)| の形で次状態を求めている．
-  \item \lstinline|render_state(current_state, distance_cm)| では，現在の状態と距離をもとに NeoPixel リングの1点ランナーとトレイルパターンを描画し，回転速度と色で危険度を視覚的に表現する．
-  \item ブザーと LCD は LED 更新と独立して更新され，距離情報を音と文字でも補完している．
-\end{itemize}
-
-\subsubsection{get\_echo\_timeout\_us関数}
-
-\begin{lstlisting}[firstnumber=1, caption=get\_echo\_timeout\_us関数, label=get_echo_timeout]
-uint32_t get_echo_timeout_us()
+// ==============================
+// 定数定義
+// ==============================
+// 危険度
+enum DangerLevel : uint8_t
 {
-    const float timeout_us = (2.0f * DIST_MAX_CM / 0.0343f) + 1000.0f;
-    return (uint32_t)timeout_us;
-}
-\end{lstlisting}
+    LEVEL_SAFE,
+    LEVEL_CAUTION,
+    LEVEL_DANGER
+};
 
-\begin{itemize}
-  \item HC-SR04 の測距で使用する \lstinline|pulseIn| のタイムアウト値をマイクロ秒単位で求める関数である．
-  \item 最大測定距離に少し余裕を加えた時間を返すことで，エコーが戻らない場合でも無限待ちにならないようにしている．
-  \item \lstinline|pulseIn| は指定時間内にパルスが終わらない場合に 0 を返すため，安全側の距離判定に使いやすい\cite{pulseInRef}．
-\end{itemize}
+// 距離センサー (HC-SR04)
+const uint8_t TRIG_PIN = 8;
+const uint8_t ECHO_PIN = 9;
+// 距離閾値
+const uint16_t DIST_MIN_CM = 2;
+const uint16_t DIST_MAX_CM = 335;
+const uint16_t DIST_DANGER_CM = 50;
+const uint16_t DIST_CAUTION_CM = 100;
+// HC-SR04計測制御
+const float sonic = 0.0343f; // 拡張: 温度補正
+const uint32_t SENSOR_INTERVAL_MS = 60;
+const uint32_t ECHO_TIMEOUT_US = (uint32_t)((2.0f * DIST_MAX_CM / sonic) + 1000.0f);
+// 測距安定化
+const uint8_t DIST_BUFFER_SIZE = 3;
+const float EMA_WEIGHT = 0.4f; // [0, 1]
 
-\subsubsection{get\_danger\_level関数}
+// NeoPixel ring
+const uint8_t NEOPIXEL_PIN = 2;
+const uint8_t NEOPIXEL_NUM = 24;
+const uint8_t LEVEL_COLORS[][3] = {
+    {0, 50, 0},  // LEVEL_SAFE
+    {50, 25, 0}, // LEVEL_CAUTION
+    {50, 0, 0},  // LEVEL_DANGER
+};
 
-\begin{lstlisting}[firstnumber=1, caption=get\_danger\_level関数, label=get_danger_level]
+// 圧電ブザー
+const uint8_t BUZZER_PIN = 7;
+// ブザー状態
+enum BuzzerState : uint8_t
+{
+    BUZZER_SILENT,
+    BUZZER_BEEP_ON,
+    BUZZER_BEEP_OFF
+};
+// ブザー周波数
+const uint16_t BUZZER_FREQ_NEAR_HZ = 2200;
+const uint16_t BUZZER_FREQ_FAR_HZ = 800;
+// ブザーON/OFF比率
+const uint16_t BUZZER_DANGER_ON_MS = 180;
+const uint16_t BUZZER_DANGER_OFF_MS = 80;
+const uint16_t BUZZER_CAUTION_ON_MS = 80;
+const uint16_t BUZZER_CAUTION_OFF_MS = 220;
+
+// LCD (16x2 I2C)
+const uint8_t LCD_ADDR = 0x27;
+const uint8_t LCD_COLS = 16;
+const uint8_t LCD_ROWS = 2;
+const char *LEVEL_LABELS[] = {
+    "SAFE",    // LEVEL_SAFE
+    "CAUTION", // LEVEL_CAUTION
+    "DANGER",  // LEVEL_DANGER
+};
+
+// UIマッピング用レンジ
+const uint16_t UI_MIN_CM = DIST_MIN_CM;
+const uint16_t UI_MAX_CM = 180;
+// UI更新間隔
+const uint16_t DURATION_MIN_MS = 40;
+const uint16_t DURATION_MAX_MS = 500;
+const uint16_t LCD_UPDATE_INTERVAL_MS = 200;
+
+// 状態遷移ロジック
+const uint8_t STATE_COUNT = NEOPIXEL_NUM;
+enum StateLogic : uint8_t
+{
+    STATE_LOGIC_INC,
+    STATE_LOGIC_LFSR,
+    STATE_LOGIC_MOD
+};
+const StateLogic state_logic_num = STATE_LOGIC_MOD; // 拡張: 外部入力
+
+// ==============================
+// 型定義エラー対策のプロトタイプ
+// ==============================
+DangerLevel get_danger_level(int distance_cm);
+uint32_t color_from_level(DangerLevel level);
+void apply_buzzer_profile(DangerLevel level, int distance_cm);
+
+// ==============================
+// ライブラリオブジェクト
+// ==============================
+Adafruit_NeoPixel ring(NEOPIXEL_NUM, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
+LiquidCrystal_I2C lcd(LCD_ADDR, LCD_COLS, LCD_ROWS);
+
+// ==============================
+// ジェネレータ (state -> next_state)
+// ==============================
+
+typedef uint8_t (*Generator)(uint8_t);
+
+constexpr uint8_t LFSR_BITS = 0x1F;
+
+Generator gens[] = {
+    [](uint8_t current) -> uint8_t
+    {
+        return (current + 1) % STATE_COUNT;
+    },
+    [](uint8_t current) -> uint8_t
+    {
+        uint8_t x = (current == 0 || current >= STATE_COUNT) ? 1 : current;
+        for (;;)
+        {
+            const bool feedback = ((x >> 0) ^ (x >> 2)) & 0x01;
+            x = ((x >> 1) | (uint8_t(feedback) << 4)) & LFSR_BITS;
+
+            if (x != 0 && x < STATE_COUNT)
+            {
+                return x;
+            }
+        }
+    },
+    [](uint8_t current) -> uint8_t
+    {
+        constexpr uint8_t a = 13;
+        return (current * a + 1) % STATE_COUNT;
+    }};
+
+Generator get_next = gens[state_logic_num];
+
+// ==============================
+// グローバル状態
+// ==============================
+
+uint8_t current_state = 0;
+
+unsigned long last_sensor_ms = 0;
+unsigned long last_render_ms = 0;
+unsigned long last_lcd_ms = 0;
+
+int measured_distance_cm = DIST_MAX_CM;
+int filtered_distance_cm = DIST_MAX_CM;
+
+// 測距バッファ
+int dist_buffer[DIST_BUFFER_SIZE] = {DIST_MAX_CM, DIST_MAX_CM, DIST_MAX_CM};
+uint8_t dist_buffer_index = 0;
+uint8_t dist_buffer_filled = 0;
+
+// ブザー状態機械
+BuzzerState buzzer_state = BUZZER_SILENT;
+unsigned long buzzer_phase_started_ms = 0;
+int buzzer_on_ms = BUZZER_CAUTION_ON_MS;
+int buzzer_off_ms = BUZZER_CAUTION_OFF_MS;
+int buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
+
+// ==============================
+// ヘルパ
+// ==============================
 DangerLevel get_danger_level(int distance_cm)
 {
     if (distance_cm <= (int)DIST_DANGER_CM)
@@ -281,16 +345,7 @@ DangerLevel get_danger_level(int distance_cm)
     }
     return LEVEL_SAFE;
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item 距離値を SAFE / CAUTION / DANGER の 3 段階に分類する関数である．
-  \item LED の色，ブザーのリズム，LCD の表示内容が同じ基準で切り替わるように，危険度を一元化している．
-\end{itemize}
-
-\subsubsection{clamp\_distance\_cm関数}
-
-\begin{lstlisting}[firstnumber=1, caption=clamp\_distance\_cm関数, label=clamp_distance]
 int clamp_distance_cm(int distance_cm)
 {
     if (distance_cm < (int)DIST_MIN_CM)
@@ -303,16 +358,7 @@ int clamp_distance_cm(int distance_cm)
     }
     return distance_cm;
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item 測定値が範囲外になった場合に，最小距離と最大距離の範囲内へ丸める関数である．
-  \item センサ値の異常や変動によって極端な値が出ても，後段の表示やマッピング関数が破綻しないようにしている．
-\end{itemize}
-
-\subsubsection{lcd\_print\_padded関数}
-
-\begin{lstlisting}[firstnumber=1, caption=lcd\_print\_padded関数, label=lcd_print_padded]
 void lcd_print_padded(const char *text)
 {
     lcd.print(text);
@@ -322,45 +368,61 @@ void lcd_print_padded(const char *text)
         lcd.print(' ');
     }
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item LCD の 1 行分に文字列を表示し，残りをスペースで埋める関数である．
-  \item 以前の表示内容が残らないようにし，短い文字列を表示したときの見た目を整えている．
-\end{itemize}
+int median_distance_cm(int a, int b, int c)
+{
+    if (a > b)
+    {
+        int t = a;
+        a = b;
+        b = t;
+    }
+    if (b > c)
+    {
+        int t = b;
+        b = c;
+        c = t;
+    }
+    if (a > b)
+    {
+        int t = a;
+        a = b;
+        b = t;
+    }
+    return b;
+}
 
-\subsubsection{map\_distance\_to\_buzzer\_freq関数}
+void push_distance_sample(int raw_cm)
+{
+    dist_buffer[dist_buffer_index] = raw_cm;
+    dist_buffer_index = (dist_buffer_index + 1) % DIST_BUFFER_SIZE;
 
-\begin{lstlisting}[firstnumber=1, caption=map\_distance\_to\_buzzer\_freq関数, label=map_distance_to_buzzer_freq]
+    if (dist_buffer_filled < DIST_BUFFER_SIZE)
+    {
+        dist_buffer_filled++;
+    }
+}
+
 int map_distance_to_buzzer_freq(int distance_cm)
 {
-    if (distance_cm <= (int)DIST_MIN_CM)
+    if (distance_cm <= (int)UI_MIN_CM)
     {
         return BUZZER_FREQ_NEAR_HZ;
     }
-    if (distance_cm >= (int)DIST_MAX_CM)
+    if (distance_cm >= (int)UI_MAX_CM)
     {
         return BUZZER_FREQ_FAR_HZ;
     }
 
-    float x = (float)(distance_cm - DIST_MIN_CM) /
-              (float)(DIST_MAX_CM - DIST_MIN_CM);
+    float x = (float)(distance_cm - UI_MIN_CM) /
+              (float)(UI_MAX_CM - UI_MIN_CM);
 
     float f = BUZZER_FREQ_NEAR_HZ +
               (BUZZER_FREQ_FAR_HZ - BUZZER_FREQ_NEAR_HZ) * x;
 
     return (int)f;
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item 距離に応じてブザーの周波数を変えるための補助関数である．
-  \item 近距離では高い周波数，遠距離では低い周波数にすることで，危険度を音の高さでも表している．
-\end{itemize}
-
-\subsubsection{apply\_buzzer\_profile関数}
-
-\begin{lstlisting}[firstnumber=1, caption=apply\_buzzer\_profile関数, label=apply_buzzer_profile]
 void apply_buzzer_profile(DangerLevel level, int distance_cm)
 {
     buzzer_freq_hz = map_distance_to_buzzer_freq(distance_cm);
@@ -382,16 +444,11 @@ void apply_buzzer_profile(DangerLevel level, int distance_cm)
         break;
     }
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item 危険度に応じてブザーの ON/OFF 時間を切り替える関数である．
-  \item SAFE のときは無音に戻し，CAUTION と DANGER では異なる点滅比率にすることで，危険度をリズムとして伝える．
-\end{itemize}
+// ==============================
+// 距離測定 (HC-SR04)
+// ==============================
 
-\subsubsection{measure\_distance\_cm\_raw関数}
-
-\begin{lstlisting}[firstnumber=1, caption=measure\_distance\_cm\_raw関数, label=measure_distance_raw]
 int measure_distance_cm_raw()
 {
     digitalWrite(TRIG_PIN, LOW);
@@ -399,57 +456,53 @@ int measure_distance_cm_raw()
     digitalWrite(TRIG_PIN, HIGH);
     delayMicroseconds(10);
     digitalWrite(TRIG_PIN, LOW);
-
-    const uint32_t echo_timeout_us = get_echo_timeout_us();
-    unsigned long duration = pulseIn(ECHO_PIN, HIGH, echo_timeout_us);
+    unsigned long duration = pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US);
 
     if (duration == 0)
     {
         return DIST_MAX_CM;
     }
 
-    int distance = (int)(duration * 0.0343f / 2.0f);
+    int distance = (int)(duration * sonic / 2.0f);
     return clamp_distance_cm(distance);
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item TRIG ピンを使って HC-SR04 に超音波パルスの発射を指示する関数である．
-  \item ECHO ピンの HIGH パルス幅を \lstinline|pulseIn| で測定し，その時間から距離を計算する\cite{pulseInRef,hcsr04Ref}．
-  \item 取得失敗時は最大距離を返し，安全側の表示にする．
-  \item 最後に \lstinline|clamp_distance_cm| を通すことで，異常値を範囲内へ整えている．
-\end{itemize}
+int read_distance_cm()
+{
+    int raw_cm = measure_distance_cm_raw();
+    push_distance_sample(raw_cm);
 
-\subsubsection{smooth\_distance\_cm関数}
+    if (dist_buffer_filled < DIST_BUFFER_SIZE)
+    {
+        return raw_cm;
+    }
 
-\begin{lstlisting}[firstnumber=1, caption=smooth\_distance\_cm関数, label=smooth_distance_cm]
+    return median_distance_cm(dist_buffer[0], dist_buffer[1], dist_buffer[2]);
+}
+
+// 軽い平滑化: EMA
 int smooth_distance_cm(int prev_cm, int new_cm)
 {
-    return (prev_cm * 7 + new_cm * 3) / 10;
+    return EMA_WEIGHT * new_cm + (1 - EMA_WEIGHT) * prev_cm;
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item 直前の値と新しい値を重み付け平均して，距離の急な揺れを抑える関数である．
-  \item 表示のちらつきやブザーの不安定な切り替わりを減らす役割を持つ．
-\end{itemize}
+// ==============================
+// 距離 -> duration (ms)
+// ==============================
 
-\subsubsection{map\_distance\_to\_duration関数}
-
-\begin{lstlisting}[firstnumber=1, caption=map\_distance\_to\_duration関数, label=map_distance_to_duration]
 int map_distance_to_duration(int distance_cm)
 {
-    if (distance_cm <= (int)DIST_MIN_CM)
+    if (distance_cm <= (int)UI_MIN_CM)
     {
         return DURATION_MIN_MS;
     }
-    if (distance_cm >= (int)DIST_MAX_CM)
+    if (distance_cm >= (int)UI_MAX_CM)
     {
         return DURATION_MAX_MS;
     }
 
-    float x = (float)(distance_cm - DIST_MIN_CM) /
-              (float)(DIST_MAX_CM - DIST_MIN_CM);
+    float x = (float)(distance_cm - UI_MIN_CM) /
+              (float)(UI_MAX_CM - UI_MIN_CM);
 
     float t = x * x;
 
@@ -458,40 +511,17 @@ int map_distance_to_duration(int distance_cm)
 
     return (int)dura;
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item 距離を LED の状態更新周期へ変換する関数である．
-  \item 二乗カーブを使うことで，近距離側で変化が大きく，遠距離側で変化が緩やかになるようにしている．
-  \item この設計により，危険が近づくほど回転速度が急に上がるような印象を与える．
-\end{itemize}
+// ==============================
+// NeoPixel ring24 のrender
+// ==============================
 
-\subsubsection{color\_from\_level関数}
-
-\begin{lstlisting}[firstnumber=1, caption=color\_from\_level関数, label=color_from_level]
 uint32_t color_from_level(DangerLevel level)
 {
-    switch (level)
-    {
-    case LEVEL_DANGER:
-        return ring.Color(50, 0, 0);
-    case LEVEL_CAUTION:
-        return ring.Color(50, 25, 0);
-    case LEVEL_SAFE:
-    default:
-        return ring.Color(0, 50, 0);
-    }
+    const uint8_t *c = LEVEL_COLORS[level];
+    return ring.Color(c[0], c[1], c[2]);
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item 危険度ごとの LED 色を決める関数である．
-  \item DANGER は赤，CAUTION は黄，SAFE は緑とすることで，直感的に状態が分かるようにしている．
-\end{itemize}
-
-\subsubsection{render\_state関数}
-
-\begin{lstlisting}[firstnumber=1, caption=render\_state関数, label=render_state]
 void render_state(uint8_t state, int distance_cm)
 {
     ring.clear();
@@ -521,18 +551,11 @@ void render_state(uint8_t state, int distance_cm)
 
     ring.show();
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item NeoPixel リングに回転するような見た目を作る描画関数である．
-  \item 現在の状態番号に対応する 1 点を主光源とし，その前後にトレイルを付けることで動きが分かるようにしている．
-  \item \lstinline|setPixelColor()| で各 LED の色を設定し，\lstinline|show()| で実際に反映する\cite{neoPixelRef}．
-  \item 距離に応じた色を用いることで，動きと危険度の両方を表示している．
-\end{itemize}
+// ==============================
+// ブザー
+// ==============================
 
-\subsubsection{update\_buzzer関数}
-
-\begin{lstlisting}[firstnumber=1, caption=update\_buzzer関数, label=update_buzzer]
 void update_buzzer(int distance_cm)
 {
     const DangerLevel level = get_danger_level(distance_cm);
@@ -582,65 +605,358 @@ void update_buzzer(int distance_cm)
         break;
     }
 }
-\end{lstlisting}
 
-\begin{itemize}
-  \item ブザーを状態機械として制御する関数である．
-  \item SAFE では無音に戻し，CAUTION と DANGER では ON/OFF を交互に切り替える．
-  \item \lstinline|tone()| は指定周波数の矩形波を生成し，\lstinline|noTone()| はその発音を止める\cite{toneRef,noToneRef}．
-  \item この構造により，ブロッキングせずに危険度を音で伝えられる．
-\end{itemize}
+// ==============================
+// LCD
+// ==============================
 
-\subsubsection{update\_lcd関数}
-
-\begin{lstlisting}[firstnumber=1, caption=update\_lcd関数, label=update_lcd]
 void update_lcd(int distance_cm)
 {
     char line0[17];
     char line1[17];
-
     snprintf(line0, sizeof(line0), "Dist:%3dcm", distance_cm);
-
     DangerLevel level = get_danger_level(distance_cm);
-    switch (level)
-    {
-    case LEVEL_DANGER:
-        snprintf(line1, sizeof(line1), "DANGER");
-        break;
-    case LEVEL_CAUTION:
-        snprintf(line1, sizeof(line1), "CAUTION");
-        break;
-    case LEVEL_SAFE:
-    default:
-        snprintf(line1, sizeof(line1), "SAFE");
-        break;
-    }
-
+    snprintf(line1, sizeof(line1), "%s", LEVEL_LABELS[level]);
     lcd.setCursor(0, 0);
     lcd_print_padded(line0);
-
     lcd.setCursor(0, 1);
     lcd_print_padded(line1);
 }
+
+// ==============================
+// setup
+// ==============================
+
+void setup()
+{
+    Serial.begin(9600);
+
+    pinMode(TRIG_PIN, OUTPUT);
+    pinMode(ECHO_PIN, INPUT);
+
+    ring.begin();
+    ring.setBrightness(40);
+    ring.clear();
+    ring.show();
+
+    pinMode(BUZZER_PIN, OUTPUT);
+    noTone(BUZZER_PIN);
+
+    lcd.init();
+    lcd.backlight();
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd_print_padded("Distance UI");
+    lcd.setCursor(0, 1);
+    lcd_print_padded("Initializing...");
+
+    current_state = 0;
+    measured_distance_cm = DIST_MAX_CM;
+    filtered_distance_cm = DIST_MAX_CM;
+
+    last_sensor_ms = 0;
+    last_render_ms = 0;
+    last_lcd_ms = 0;
+
+    buzzer_state = BUZZER_SILENT;
+    buzzer_phase_started_ms = 0;
+    buzzer_on_ms = BUZZER_CAUTION_ON_MS;
+    buzzer_off_ms = BUZZER_CAUTION_OFF_MS;
+    buzzer_freq_hz = BUZZER_FREQ_FAR_HZ;
+}
+
+// ==============================
+// loop
+// ==============================
+
+void loop()
+{
+    unsigned long now;
+    // 1. センサー更新
+    now = millis();
+    if (now - last_sensor_ms >= SENSOR_INTERVAL_MS)
+    {
+        last_sensor_ms = now;
+        measured_distance_cm = read_distance_cm();
+        filtered_distance_cm = smooth_distance_cm(filtered_distance_cm, measured_distance_cm);
+
+        Serial.print("raw=");
+        Serial.print(measured_distance_cm);
+        Serial.print("cm, filtered=");
+        Serial.print(filtered_distance_cm);
+        Serial.println("cm");
+    }
+    // 2. NeoPixel更新
+    now = millis();
+    int duration_ms = map_distance_to_duration(filtered_distance_cm);
+    if (now - last_render_ms >= (unsigned long)duration_ms)
+    {
+        last_render_ms = now;
+        current_state = get_next(current_state);
+        render_state(current_state, filtered_distance_cm);
+    }
+    // 3. ブザー更新
+    update_buzzer(filtered_distance_cm);
+    // 4. LCD更新
+    now = millis();
+    if (now - last_lcd_ms >= LCD_UPDATE_INTERVAL_MS)
+    {
+        last_lcd_ms = now;
+        update_lcd(filtered_distance_cm);
+    }
+}
+
 \end{lstlisting}
 
-\begin{itemize}
-  \item LCD の 1 行目に距離値，2 行目に危険度ラベルを表示する関数である．
-  \item \lstinline|snprintf| を使うことで，固定長バッファに安全に文字列を整形している．
-  \item \lstinline|lcd.setCursor()| と \lstinline|lcd.print()| を用いて表示位置を制御し，\lstinline|lcd_print_padded| で余白を埋めている．
-\end{itemize}
+\subsection{関数の詳細}
+
+本節では，ソースコード\ref{src:whole_program}に示したプログラム内の主な関数について，
+概要，引数と戻り値，内部処理を説明する．
+行番号はソースコード\ref{src:whole_program}中の行番号を表す．
+
+\subsubsection{get\_danger\_level関数}
+
+\lstinline|get_danger_level(int distance_cm)| は，距離に応じて危険度レベル
+\lstinline|LEVEL_SAFE|，\lstinline|LEVEL_CAUTION|，\lstinline|LEVEL_DANGER|
+のいずれかを返す関数である．
+引数 \lstinline|distance_cm| は cm 単位の距離であり，戻り値は危険度を表す
+\lstinline|DangerLevel| 型の値である．
+ソースコード\ref{src:whole_program}の165〜173行目では，距離が
+\lstinline|DIST_DANGER_CM| 以下の場合に \lstinline|LEVEL_DANGER|，
+\lstinline|DIST_CAUTION_CM| 以下の場合に \lstinline|LEVEL_CAUTION| を返し，
+それより遠い場合は \lstinline|LEVEL_SAFE| を返すことで，
+LED の色やブザーのパターン，LCD 表示の共通の基準として利用している．
+
+\subsubsection{clamp\_distance\_cm関数}
+
+\lstinline|clamp_distance_cm(int distance_cm)| は，距離値が想定範囲を外れた場合に，
+\lstinline|DIST_MIN_CM| 以上 \lstinline|DIST_MAX_CM| 以下に丸める関数である．
+引数と戻り値はいずれも cm 単位の整数値である．
+ソースコード\ref{src:whole_program}の178〜186行目では，極端に小さい値や大きい値を
+そのまま後段の処理に渡さないようにしており，NeoPixel の速度マッピングや
+ブザー周波数の計算が破綻しないようにしている．
+
+\subsubsection{lcd\_print\_padded関数}
+
+\lstinline|lcd_print_padded(const char *text)| は，LCD の 1 行分に文字列を表示し，
+残りの桁をスペースで埋める補助関数である．
+引数 \lstinline|text| は表示したい文字列であり，戻り値はない．
+ソースコード\ref{src:whole_program}の191〜196行目では，まず
+\lstinline|lcd.print(text)| で文字列を出力し，その長さを \lstinline|strlen| で取得する．
+続いて，\lstinline|LCD_COLS| までの残りの桁数だけ空白文字を出力することで，
+前回表示した文字列が行末に残らないようにしている．
+
+\subsubsection{median\_distance\_cm関数}
+
+\lstinline|median_distance_cm(int a, int b, int c)| は，3 つの整数値の中央値を求める関数である．
+引数 \lstinline|a|, \lstinline|b|, \lstinline|c| は cm 単位の距離値であり，戻り値として
+それらの中央値を返す．
+ソースコード\ref{src:whole_program}の201〜219行目では，比較と入れ替えを数回行うことで
+簡単なソートを実現し，中間の値を返す実装になっている．
+これにより，超音波センサの一時的な外れ値の影響を減らし，
+より安定した距離値を得られるようにしている．
+
+\subsubsection{push\_distance\_sample関数}
+
+\lstinline|push_distance_sample(int raw_cm)| は，新たに取得した距離サンプルを
+固定長バッファ \lstinline|dist_buffer| に追加する関数である．
+引数 \lstinline|raw_cm| は生の距離値であり，戻り値はない．
+ソースコード\ref{src:whole_program}の224〜230行目では，
+現在のインデックス位置に値を書き込んだ後，インデックスを循環させている．
+また，バッファがまだすべて埋まっていない場合には，
+\lstinline|dist_buffer_filled| をインクリメントしてサンプル数を記録している．
+
+\subsubsection{map\_distance\_to\_buzzer\_freq関数}
+
+\lstinline|map_distance_to_buzzer_freq(int distance_cm)| は，
+距離をブザーの周波数に線形マッピングする関数である．
+引数 \lstinline|distance_cm| は距離値であり，
+戻り値は Hz 単位の周波数を表す整数値である．
+ソースコード\ref{src:whole_program}の235〜250行目では，
+\lstinline|UI_MIN_CM| と \lstinline|UI_MAX_CM| の範囲外では
+それぞれ近距離用・遠距離用の周波数を直接返し，
+その範囲内では 0〜1 の正規化変数 \lstinline|x| を用いて
+\lstinline|BUZZER_FREQ_NEAR_HZ| から \lstinline|BUZZER_FREQ_FAR_HZ| までを
+線形補間している．これにより，距離が近いほど高い音，遠いほど低い音になるように
+危険度を音の高さでも表現している．
+
+\subsubsection{apply\_buzzer\_profile関数}
+
+\lstinline|apply_buzzer_profile(DangerLevel level, int distance_cm)| は，
+危険度レベルと距離に応じてブザーの周波数と ON/OFF 時間を設定する関数である．
+引数 \lstinline|level| は危険度，\lstinline|distance_cm| は距離値であり，
+戻り値はない．
+ソースコード\ref{src:whole_program}の255〜272行目では，
+まず \lstinline|map_distance_to_buzzer_freq()| により
+\lstinline|buzzer_freq_hz| を決定し，続いて危険度レベルに応じて
+\lstinline|buzzer_on_ms| と \lstinline|buzzer_off_ms| に
+それぞれ DANGER 用，CAUTION 用，もしくは無音となる SAFE 用の値を設定している．
+
+\subsubsection{measure\_distance\_cm\_raw関数}
+
+\lstinline|measure_distance_cm_raw()| は，HC-SR04 を用いて
+生の距離値を 1 回測定する関数である．
+引数は持たず，戻り値として距離値（cm）を整数で返す．
+ソースコード\ref{src:whole_program}の281〜294行目では，
+まず TRIG ピンを LOW→HIGH→LOW と短時間切り替えることで超音波パルスを発射し，
+その後 \lstinline|pulseIn(ECHO_PIN, HIGH, ECHO_TIMEOUT_US)| を用いて
+ECHO ピンの HIGH パルス幅をマイクロ秒単位で計測している．
+タイムアウトした場合（\lstinline|duration == 0|）には最大距離
+\lstinline|DIST_MAX_CM| を返し，それ以外の場合には
+\lstinline|duration * sonic / 2.0f| によって往復時間から距離に変換した後，
+\lstinline|clamp_distance_cm()| を通して範囲内の値に丸めている．
+
+\subsubsection{read\_distance\_cm関数}
+
+\lstinline|read_distance_cm()| は，複数サンプルを用いて中央値処理を行った距離値を返す関数である．
+引数は持たず，戻り値は cm 単位の整数値である．
+ソースコード\ref{src:whole_program}の299〜307行目では，
+まず \lstinline|measure_distance_cm_raw()| を呼び出して生の距離値を取得し，
+\lstinline|push_distance_sample()| によって測距バッファに保存している．
+バッファがまだ完全に埋まっていない場合は生の値をそのまま返し，
+バッファが埋まっている場合には \lstinline|median_distance_cm()| を用いて
+3 つのサンプルの中央値を求めて返すことで，瞬間的なノイズの影響を低減している．
+
+\subsubsection{smooth\_distance\_cm関数}
+
+\lstinline|smooth_distance_cm(int prev_cm, int new_cm)| は，
+直前の距離値と新しい距離値から，指数移動平均により平滑化した距離値を求める関数である．
+引数 \lstinline|prev_cm| は前回の平滑化済み距離，\lstinline|new_cm| は新たに取得した距離値であり，
+戻り値は平滑化後の距離値である．
+ソースコード\ref{src:whole_program}の313行目では，
+\lstinline|EMA_WEIGHT * new_cm + (1 - EMA_WEIGHT) * prev_cm| という式により，
+新しい値を \lstinline|EMA_WEIGHT|，過去の値を \lstinline|1 - EMA_WEIGHT| の重みで合成している．
+これにより，距離表示やブザーの動作が滑らかになり，センサのばらつきによるちらつきを抑えている．
+
+\subsubsection{map\_distance\_to\_duration関数}
+
+\lstinline|map_distance_to_duration(int distance_cm)| は，
+距離値を NeoPixel の状態更新周期（ms）に変換する関数である．
+引数 \lstinline|distance_cm| は距離値であり，戻り値はミリ秒単位の整数値である．
+ソースコード\ref{src:whole_program}の322~339行目では，
+距離が \lstinline|UI_MIN_CM| 以下の場合に最小周期
+\lstinline|DURATION_MIN_MS|，\lstinline|UI_MAX_CM| 以上の場合に最大周期
+\lstinline|DURATION_MAX_MS| を返す．
+その中間では 0〜1 に正規化した距離 \lstinline|x| から
+\lstinline|t = x * x| とすることで近距離側で変化が急になる二乗カーブを作り，
+\lstinline|DURATION_MIN_MS| から \lstinline|DURATION_MAX_MS| への間を補間している．
+これにより，障害物に近づくほど NeoPixel の回転速度が急激に速くなる印象を与えられる．
+
+\subsubsection{color\_from\_level関数}
+
+\lstinline|color_from_level(DangerLevel level)| は，
+危険度レベルに応じた NeoPixel の基本色を返す関数である．
+引数 \lstinline|level| は危険度を表し，戻り値は
+\lstinline|Adafruit_NeoPixel| で用いる 32 ビットの色値である．
+ソースコード\ref{src:whole_program}の348〜349行目では，
+\lstinline|LEVEL_COLORS| 配列から RGB 各成分を取り出し，
+\lstinline|ring.Color()| を用いて NeoPixel 用の色に変換している．
+SAFE で緑，CAUTION で黄，DANGER で赤という直感的な色分けを行っている．
+
+\subsubsection{render\_state関数}
+
+\lstinline|render_state(uint8_t state, int distance_cm)| は，
+現在の状態番号と距離から NeoPixel リング上の表示パターンを描画する関数である．
+引数 \lstinline|state| は 0〜\lstinline|NEOPIXEL_NUM - 1| の状態番号，
+\lstinline|distance_cm| は距離値であり，戻り値はない．
+ソースコード\ref{src:whole_program}の354〜379行目では，
+まずリングを \lstinline|clear()| で消灯した後，
+\lstinline|get_danger_level()| と \lstinline|color_from_level()| により
+危険度に応じた基本色を求めている．
+続いて，状態番号に対応するインデックスを中心として前後の LED に明度の異なる
+トレイル色を設定し，最後に \lstinline|show()| を呼び出して表示を更新する．
+これにより，1 点ランナーとその前後の残像によって回転しているような視覚効果を実現している．
+
+\subsubsection{update\_buzzer関数}
+
+\lstinline|update_buzzer(int distance_cm)| は，
+距離に応じてブザーの状態機械を更新する関数である．
+引数 \lstinline|distance_cm| は距離値であり，戻り値はない．
+ソースコード\ref{src:whole_program}の388〜433行目では，
+まず現在の距離から危険度を求め，\lstinline|apply_buzzer_profile()| により
+周波数と ON/OFF 時間を設定する．
+\lstinline|LEVEL_SAFE| の場合には，ブザーが鳴っていれば \lstinline|noTone()| で停止し，
+\lstinline|BUZZER_SILENT| 状態に戻して処理を終了する．
+それ以外の場合には，現在の状態 \lstinline|buzzer_state| に応じて
+\lstinline|tone()| と \lstinline|noTone()| を切り替え，
+経過時間が ON/OFF 時間を超えたタイミングで次の状態へ遷移させることで，
+ブロッキングせずに周期的なビープ音を生成している．
+
+\subsubsection{update\_lcd関数}
+
+\lstinline|update_lcd(int distance_cm)| は，
+距離と危険度を LCD に表示する関数である．
+引数 \lstinline|distance_cm| は距離値であり，戻り値はない．
+ソースコード\ref{src:whole_program}の442〜450行目では，
+\lstinline|snprintf| を用いて 1 行目に \lstinline|"Dist:%3dcm"| 形式の距離文字列を，
+2 行目に危険度ラベル \lstinline|LEVEL_LABELS[level]| をそれぞれ生成している．
+その後，\lstinline|lcd.setCursor()| でカーソルを行頭に移動し，
+\lstinline|lcd_print_padded()| を用いて文字列と余白を出力することで，
+常に 16 文字分が埋まった見やすい表示を維持している．
+
+\subsubsection{setup関数}
+
+\lstinline|setup()| は，Arduino 起動時に 1 回だけ実行される初期化関数である．
+引数や戻り値は持たない．
+ソースコード\ref{src:whole_program}の459〜492行目では，
+シリアルポートの初期化，HC-SR04 の TRIG/ECHO ピンの入出力設定，
+NeoPixel リングの初期化と明るさ設定，ブザー用ピンの初期化，
+LCD の初期化とバックライト ON，および初期メッセージ
+\lstinline|"Distance UI"| と \lstinline|"Initializing..."| の表示を行っている．
+また，距離関連の変数や時刻管理用変数，ブザーの状態変数を初期値に設定し，
+メインループが既知の状態から動き始めるようにしている．
+
+\subsubsection{loop関数}
+
+\lstinline|loop()| は，Arduino におけるメインループ関数であり，
+システムが動作している間ずっと繰り返し呼び出される．
+引数や戻り値は持たない．
+ソースコード\ref{src:whole_program}の501〜533行目では，
+処理を 4 つのブロック（センサ更新，NeoPixel 更新，ブザー更新，LCD 更新）に分け，
+それぞれを独立した周期で実行している．
+センサ更新の部分では，前回の更新時刻との差が
+\lstinline|SENSOR_INTERVAL_MS| を超えたときに
+\lstinline|read_distance_cm()| で距離を取得し，
+\lstinline|smooth_distance_cm()| により指数移動平均で平滑化して
+\lstinline|filtered_distance_cm| に保存している．
+NeoPixel 更新では，平滑化された距離から
+\lstinline|map_distance_to_duration()| で更新周期を求め，
+その周期が経過したときに状態遷移関数 \lstinline|get_next()| を通じて
+\lstinline|current_state| を更新し，\lstinline|render_state()| でリング表示を描画する．
+ブザー更新では \lstinline|update_buzzer()| を毎ループ呼び出し，
+LCD 更新では一定間隔ごとに \lstinline|update_lcd()| を呼び出すことで，
+すべての出力が非ブロッキングに協調して動作するようにしている．
 
 \section{動作例}
 % スクショを使ってシステムがどのように動作するか説明すること．
 
 ここでは，Tinkercad 上のシミュレーション画面写真を用いて，距離に応じて NeoPixel リングの回転速度・色，ブザーのビープ周期，LCD の表示がどのように変化するかを示す．
+図\ref{fig:safe}, 図\ref{fig:caution_state}, 図\ref{fig:danger_state}には，それぞれの距離での代表的な動作状態を示す．
 
 \begin{itemize}
   \item 遠距離（例: 150cm 以上）では，NeoPixel の回転はゆっくりで，色は緑，ブザーは低頻度で鳴り，LCD には "SAFE" と表示される．
   \item 中距離（例: 50〜100cm）では，回転が中程度の速さになり，色は黄，ブザーのビープもやや頻繁になり，LCD には "CAUTION" と表示される．
   \item 近距離（例: 50cm 未満）では，回転がかなり速くなり，色は赤，ブザーが高頻度で鳴り，LCD には "DANGER" と表示される．
 \end{itemize}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{Figs/safe.png}
+  \caption{SAFE 状態のシミュレーション画面}
+  \label{fig:safe}
+\end{figure}
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{Figs/caution.png}
+  \caption{CAUTION 状態のシミュレーション画面}
+  \label{fig:caution_state}
+\end{figure}
 
+\begin{figure}[htbp]
+  \centering
+  \includegraphics[width=0.9\linewidth]{Figs/danger.png}
+  \caption{DANGER 状態のシミュレーション画面}
+  \label{fig:danger_state}
+\end{figure}
 これらの動作例から，距離が変化した際に危険度がテンポと色によって視覚・聴覚的に分かることを確認できる．
 
 \section{アピールポイント}
