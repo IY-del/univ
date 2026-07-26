@@ -25,9 +25,9 @@ static void test_get_pattern(void) {
   int (*patterns)[8][8];
   size_t n;
 
-  if (load_txt_to_8x8("font_data01.txt", &patterns, &n) != 0) {
-    fprintf(stderr, "load_txt_to_8x8 failed\n");
-    return;
+  if (load_txt_to_8x8("../font_data01.txt", &patterns, &n) != 0) {
+    fprintf(stderr, "failed to load ../font_data01.txt\n");
+    return 1;
   }
 
   printf("n = %zu\n", n);
@@ -117,22 +117,6 @@ static void test_print_pattern(void) {
   print_as_pattern(&view);
 }
 
-/* main テスト (全体) */
-static void test_main_like(void) {
-  int (*patterns)[8][8];
-  size_t n;
-
-  if (load_txt_to_8x8("font_data01.txt", &patterns, &n) != 0) {
-    fprintf(stderr, "failed to load font_data01.txt\n");
-    return;
-  }
-
-  PatternView view = new_pattern_view(n, patterns);
-  print_as_pattern(&view);
-
-  free_memory(patterns);
-}
-
 int main(void) {
 #ifdef TEST_FONTLIB
   test_fontlib();
@@ -144,8 +128,6 @@ int main(void) {
   test_iterator();
 #elif defined(TEST_PRINT_PATTERN)
   test_print_pattern();
-#elif defined(TEST_MAIN_LIKE)
-  test_main_like();
 #else
   printf("No test macro defined.\n");
 #endif

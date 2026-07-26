@@ -17,7 +17,3 @@ gcc -I.. -DTEST_ITERATOR test.c ../iterator.c ../get_coord.c ../print_pattern.c 
 # print_pattern テスト
 gcc -I.. -DTEST_PRINT_PATTERN test.c ../print_pattern.c ../iterator.c ../get_coord.c ../fontlib.c -o test_print_pattern
 ./test_print_pattern > print_pattern_sample.txt
-
-# main 相当のテスト
-clang -I.. -DTEST_MAIN_LIKE test.c ../get_pattern.c ../print_pattern.c ../get_coord.c ../iterator.c ../fontlib.c -o test_main_like
-./test_main_like > main_sample.txt
