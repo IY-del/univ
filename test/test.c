@@ -21,13 +21,13 @@ static void test_fontlib(void) {
 }
 
 /* get_pattern テスト */
-static void test_get_pattern(void) {
+void test_get_pattern(void) {
   int (*patterns)[8][8];
   size_t n;
 
   if (load_txt_to_8x8("../font_data01.txt", &patterns, &n) != 0) {
-    fprintf(stderr, "failed to load ../font_data01.txt\n");
-    return 1;
+    fprintf(stderr, "load_txt_to_8x8 failed\n");
+    return;
   }
 
   printf("n = %zu\n", n);
