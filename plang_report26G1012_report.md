@@ -449,6 +449,7 @@ double:
 ```text
 h=8 w=8 scale_w=2 scale_h=2 rotation=1
 ```
+ここで`rotation=1`はROTATE_90を意味する．
 
 ### 考察
 仕様書では，`new_pattern_view`は標準倍率・回転なしの初期値を持ち，
