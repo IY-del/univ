@@ -366,6 +366,7 @@ out_y | size_t | 出力上のY座標
 PatternCoord src = resolve_coord(&view, out_x, out_y);
 /* src.x, src.y を使ってパターン配列にアクセスする */
 ```
+
 # iterator
 
 ## 概要
