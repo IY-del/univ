@@ -151,19 +151,18 @@ Arduino は，取得した距離値をもとに危険度判定，表示速度の
 さらに，NeoPixel の状態更新，ブザー制御，LCD 更新はそれぞれ独立した周期で実行している．
 この構成により，\lstinline|delay()| に依存しない非ブロッキングな制御が可能となり，複数の出力を同時に滑らかに動作させている．
 
-\subsection{出力の振る舞い}
+\subsection{各出力の動作}
 
-計算された \lstinline|duration_ms| にしたがって，\lstinline|loop| 関数内では次の処理を行う．
+NeoPixel リングは，現在状態 \lstinline|current_state| に対応する LED を中心として，前後に減光したトレイルを付加した回転パターンを表示する．
+色は危険度に応じて SAFE を緑，CAUTION を黄，DANGER を赤に切り替えており，距離の変化を速度と色の両方で表現している．
+これにより，利用者は数値を読まなくても，動きと色だけで危険度を把握できる．
 
-\begin{itemize}
-  \item 一定時間ごとに，選択されたジェネレータ（\lstinline|get_next|）を用いて \lstinline|current_state| を更新する．
-  \item NeoPixel リングに対して \lstinline|render_state(current_state, distance_cm)| を呼び出し，1点ランナーとトレイルの回転パターンと距離に応じた色を表示する．
-  \item 圧電ブザーには \lstinline|update_buzzer(distance_cm)| で距離に応じた状態機械を適用し，\lstinline|tone()| と \lstinline|noTone()| の切り替えで危険度に応じたリズムを表現する\cite{toneRef,noToneRef}．
-  \item LCD には \lstinline|update_lcd(distance_cm)| を用いて距離値と状態ラベルを表示し，UI として扱う．
-\end{itemize}
+圧電ブザーは，危険度に応じて ON/OFF 時間と周波数を切り替える状態機械として実装している．
+SAFE では無音とし，CAUTION および DANGER では周期的なビープ音を出力することで，視線が表示器から外れている場合でも危険度を認識できる\cite{toneRef,noToneRef}．
+さらに，距離に応じて周波数も変化させることで，テンポだけでなく音の高さでも状態差を表現している．
 
-NeoPixel の色は距離レンジごとに三段階に分けており，近距離で赤，中距離で黄，遠距離で緑とすることで，色と速度の両方で危険度を多重化している．
-ブザーは状態機械として実装し，\lstinline|tone()| と \lstinline|noTone()| の切り替えを明確化することで，危険度に応じたリズムを非ブロッキングに表現している\cite{toneRef,noToneRef}．
+LCD には，距離値と危険度ラベルを表示する．
+数値表示は動作確認やデバッグにも有効であり，視覚・聴覚による直感的な提示に加えて，現在の計測結果を明示的に確認できる．
 
 \section{プログラムの説明}
 \subsection{プログラム全体の説明}
