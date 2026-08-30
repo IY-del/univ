@@ -1,9 +1,8 @@
 #include <stdio.h>
 
-#include "get_pattern.h"
-#include "print_pattern.h"
+#include "fontlib.h"
 
-int main() {
+int main(void) {
   int (*patterns)[8][8];
   size_t n;
 
